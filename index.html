@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phòng Thí Nghiệm Mạch Điện 3D – KHTN THCS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Three.js & Loaders -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <!-- Modular CSS -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/hud3d.css">
+  <link rel="stylesheet" href="css/studio2d.css?v=14">
+</head>
+<body>
+
+<!-- ==================== LỚP 1: PHÒNG THÍ NGHIỆM 3D ==================== -->
+<div id="room3DWrap">
+  <canvas id="cv3d"></canvas>
+
+  <!-- Banner trung tâm phía trên -->
+  <header class="top-banner-3d" aria-label="Tiêu đề dự án">
+    ⚡ Phòng Thí Nghiệm Mạch Điện 3D <span>KHTN THCS</span>
+  </header>
+
+  <!-- Nút Menu góc trên trái để bay nhanh tới từng Khu vực -->
+  <button class="menu-btn-3d" id="menu3DBtn" aria-haspopup="true" aria-expanded="false">
+    ☰ Menu Khu Vực
+  </button>
+
+  <nav class="menu-dropdown-3d" id="menu3DDrop" aria-label="Điều hướng phòng 3D">
+    <h4>📍 Di chuyển nhanh đến khu vực:</h4>
+    <button class="zone-jump-btn" data-zone="sample1">
+      <span>🖼️ I. Mẫu 1: Mạch Điện Đơn</span><small>Pin 9V + Đèn</small>
+    </button>
+    <button class="zone-jump-btn" data-zone="sample2">
+      <span>🖼️ I. Mẫu 2: Hai Đèn Nối Tiếp</span><small>U chia đều</small>
+    </button>
+    <button class="zone-jump-btn" data-zone="sample3">
+      <span>🖼️ I. Mẫu 3: Hai Đèn Song Song</span><small>U bằng nhau</small>
+    </button>
+    <button class="zone-jump-btn" data-zone="doctor">
+      <span>🩺 II. Khu Bác Sĩ & Đo Mạch</span><small>Sửa lỗi</small>
+    </button>
+    <button class="zone-jump-btn" data-zone="free">
+      <span>🛠️ III. Khu Lắp Mạch Tự Do</span><small>Sáng tạo</small>
+    </button>
+    <button class="zone-jump-btn" data-zone="quiz">
+      <span>🏆 IV. Khu Ôn Tập & Ký Hiệu</span><small>Kiosk Vàng</small>
+    </button>
+    <button class="zone-jump-btn" data-zone="challenge">
+      <span>🎯 V. Thử Thách Đo & Lắp Mạch</span><small>Kiosk Xanh</small>
+    </button>
+    <button class="zone-jump-btn" data-zone="window_view">
+      <span>🌳 VI. Cửa Sổ Ngắm Cảnh Sân Trường</span><small>Thiên nhiên</small>
+    </button>
+    <hr style="border:0;border-top:1px solid rgba(255,255,255,0.12);margin:4px 0">
+    <button class="zone-jump-btn" id="openDirectStudioBtn" style="background:rgba(13,148,136,0.3);border-color:#14b8a6">
+      <span>⚡ Mở ngay Bàn Lắp Mạch 2D</span><small>Trực tiếp</small>
+    </button>
+  </nav>
+
+  <!-- Huy hiệu hiển thị GPU rời & Chế độ tiết kiệm năng lượng 60FPS -->
+  <div id="gpuBadge3D" class="gpu-badge-3d" aria-label="Thông tin Card đồ họa">
+    <span class="gpu-dot"></span>
+    <span id="gpuNameTxt">🎮 GPU: Đang khởi tạo...</span>
+  </div>
+
+  <!-- Nhãn nổi khi trỏ chuột vào Bàn / Màn hình / Nút PLAY trong phòng 3D -->
+  <div id="hoverLabel3D" role="tooltip">🖱️ Bấm để tương tác</div>
+
+  <!-- Hướng dẫn thao tác ở giữa đáy -->
+  <div class="hud-help-3d">
+    <span>🖱️ <b>Giữ chuột trái + Di:</b> Nhìn xung quanh</span>
+    <span>·</span>
+    <span>⚙️ <b>Cuộn chuột:</b> Đi tới / lui</span>
+    <span>·</span>
+    <span>👆 <b>Click Bàn / Màn hình / Nút PLAY:</b> Thực hành</span>
+  </div>
+
+  <!-- Cụm Joystick ảo góc dưới phải -->
+  <div class="joy-wrap" id="joyWrap" title="Kéo tâm tròn để di chuyển trong phòng">
+    <div class="joy-ring"></div>
+    <span class="joy-arr up">▲</span>
+    <span class="joy-arr dn">▼</span>
+    <span class="joy-arr lt">◀</span>
+    <span class="joy-arr rt">▶</span>
+    <div class="joy-knob" id="joyKnob">✥</div>
+  </div>
+</div>
+
+<!-- ==================== LỚP 2: BÀN THỰC HÀNH MẠCH ĐIỆN 2D (OVERLAY) ==================== -->
+<div id="studioOverlay">
+  <canvas id="cv"></canvas>
+
+  <!-- Banner thông báo chế độ Chỉ Xem khi vào 3 bàn mạch mẫu -->
+  <div class="readonly-banner" id="roBanner">
+    <span class="ro-tag">CHẾ ĐỘ CHỈ XEM</span>
+    <span class="ro-txt">👁️ Quan sát, bật/tắt Khóa K & đo thử bằng que đo Vôn kế (Khóa chỉnh sửa cấu trúc mạch)</span>
+    <button class="ro-switch-btn" id="roSwitchBtn">🛠️ Mở trong Phòng Lab Tự Do</button>
+  </div>
+
+  <nav class="topbar">
+    <button class="back-3d-btn" id="closeStudioBtn">🚶 Quay lại Phòng 3D</button>
+
+    <div class="divider"></div>
+
+    <!-- Huy hiệu hiển thị Trạm chức năng chuyên biệt của Kiosk 3D (Khóa chuyển đổi tùy tiện theo yêu cầu) -->
+    <div class="station-badge mode-free" id="stationBadge">
+      <span class="station-badge-dot"></span>
+      <span id="stationBadgeTxt">🛠️ <b>Trạm Thực Hành:</b> Phòng Lab Lắp Mạch Tự Do</span>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="top-actions">
+      <button class="btn" id="flowBtn">🔵 Hạt Electron (- → +)</button>
+      <button class="btn" id="cutBtn">✂️ Cắt dây</button>
+      <button class="btn accent" id="presetBtn">⚡ Đổi mạch mẫu</button>
+      <button class="btn danger" id="clearBtn">🗑 Xóa bàn</button>
+    </div>
+  </nav>
+
+  <!-- Khay linh kiện dọc bên trái chuẩn PhET -->
+  <aside class="left-dock" aria-label="Khay linh kiện">
+    <div class="comp-drawer">
+      <button class="item-btn" data-add="wire_seg">
+        <svg viewBox="0 0 64 28">
+          <defs>
+            <linearGradient id="gWire" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f3a683"/>
+              <stop offset="50%" stop-color="#c4512d"/>
+              <stop offset="100%" stop-color="#6e2611"/>
+            </linearGradient>
+          </defs>
+          <rect x="6" y="10" width="52" height="8" rx="4" fill="url(#gWire)" stroke="#5a1e0c" stroke-width="1"/>
+        </svg>
+        <span>Dây nối</span>
+      </button>
+
+      <button class="item-btn" data-add="battery">
+        <svg viewBox="0 0 64 28">
+          <defs>
+            <linearGradient id="gBatB" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#64748b"/>
+              <stop offset="45%" stop-color="#1e293b"/>
+              <stop offset="100%" stop-color="#090d16"/>
+            </linearGradient>
+            <linearGradient id="gBatC" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fde68a"/>
+              <stop offset="50%" stop-color="#f59e0b"/>
+              <stop offset="100%" stop-color="#b45309"/>
+            </linearGradient>
+          </defs>
+          <rect x="55" y="10" width="3" height="8" rx="1" fill="#94a3b8"/>
+          <rect x="6" y="5" width="32" height="18" rx="2" fill="url(#gBatB)" stroke="#0f172a"/>
+          <rect x="38" y="5" width="17" height="18" rx="1" fill="url(#gBatC)" stroke="#92400e"/>
+        </svg>
+        <span>Pin</span>
+      </button>
+
+      <button class="item-btn" data-add="bulb">
+        <svg viewBox="0 0 64 34">
+          <circle cx="32" cy="12" r="10" fill="rgba(226,232,240,0.55)" stroke="#64748b" stroke-width="1.3"/>
+          <path d="M29 20 L27 10 Q32 7 37 10 L35 20" fill="none" stroke="#d9534f" stroke-width="1.6"/>
+          <rect x="27" y="20" width="10" height="8" rx="1.5" fill="#94a3b8" stroke="#475569" stroke-width="1"/>
+          <line x1="27" y1="24" x2="37" y2="24" stroke="#475569" stroke-width="1"/>
+          <path d="M29 28 L35 28 L33 31 L31 31 Z" fill="#1e293b"/>
+        </svg>
+        <span>Đèn tròn</span>
+      </button>
+
+      <button class="item-btn" data-add="resistor">
+        <svg viewBox="0 0 64 28">
+          <defs>
+            <linearGradient id="gRes" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#fff3d6"/>
+              <stop offset="55%" stop-color="#e6c28b"/>
+              <stop offset="100%" stop-color="#b58950"/>
+            </linearGradient>
+          </defs>
+          <rect x="8" y="7" width="48" height="14" rx="7" fill="url(#gRes)" stroke="#8c6239" stroke-width="1"/>
+          <rect x="18" y="7" width="4" height="14" fill="#8b4513"/>
+          <rect x="27" y="7" width="4" height="14" fill="#111"/>
+          <rect x="35" y="7" width="4" height="14" fill="#111"/>
+          <rect x="45" y="7" width="3.5" height="14" fill="#eab308"/>
+        </svg>
+        <span>Điện trở</span>
+      </button>
+
+      <button class="item-btn" data-add="switch">
+        <svg viewBox="0 0 64 28">
+          <rect x="7" y="17" width="17" height="6" rx="3" fill="url(#gWire)" stroke="#5a1e0c"/>
+          <rect x="40" y="17" width="17" height="6" rx="3" fill="url(#gWire)" stroke="#5a1e0c"/>
+          <line x1="22" y1="20" x2="38" y2="5" stroke="#d97757" stroke-width="5.5" stroke-linecap="round"/>
+          <circle cx="22" cy="20" r="4.5" fill="#cbd5e1" stroke="#1e293b" stroke-width="1.5"/>
+        </svg>
+        <span>Công tắc</span>
+      </button>
+
+      <button class="item-btn" data-add="fuse">
+        <svg viewBox="0 0 64 28">
+          <rect x="12" y="7" width="40" height="14" fill="rgba(148,163,184,0.25)" stroke="#64748b" stroke-width="1.3"/>
+          <rect x="10" y="6" width="6" height="16" fill="#94a3b8"/>
+          <rect x="48" y="6" width="6" height="16" fill="#94a3b8"/>
+          <path d="M16 14 Q24 8 32 14 T48 14" fill="none" stroke="#eab308" stroke-width="2"/>
+        </svg>
+        <span>Cầu chì</span>
+      </button>
+
+      <button class="item-btn" data-add="bell">
+        <svg viewBox="0 0 64 28">
+          <path d="M18 21 A14 14 0 0 1 46 21 Z" fill="#ef4444" stroke="#991b1b" stroke-width="1.3"/>
+          <circle cx="32" cy="7" r="2.5" fill="#fbbf24"/>
+          <circle cx="49" cy="17" r="3.5" fill="#fbbf24" stroke="#92400e"/>
+        </svg>
+        <span>Chuông điện</span>
+      </button>
+    </div>
+
+    <!-- Nút chuyển chế độ Thực tế / Ký hiệu SGK -->
+    <div class="view-switcher" id="viewSeg">
+      <button data-v="real" class="view-btn on" title="Chế độ Hình ảnh thực tế (PhET)">
+        <svg width="36" height="18" viewBox="0 0 36 18">
+          <rect x="3" y="3" width="19" height="12" rx="1.5" fill="#1e293b"/>
+          <rect x="22" y="3" width="10" height="12" rx="1" fill="#f59e0b"/>
+          <rect x="32" y="6" width="2" height="6" fill="#94a3b8"/>
+        </svg>
+      </button>
+      <button data-v="schem" class="view-btn" title="Chế độ Sơ đồ ký hiệu SGK">
+        <svg width="36" height="18" viewBox="0 0 36 18">
+          <line x1="3" y1="9" x2="15" y2="9" stroke="#0f172a" stroke-width="2"/>
+          <line x1="15" y1="4" x2="15" y2="14" stroke="#0f172a" stroke-width="3.2"/>
+          <line x1="21" y1="1.5" x2="21" y2="16.5" stroke="#0f172a" stroke-width="2"/>
+          <line x1="21" y1="9" x2="33" y2="9" stroke="#0f172a" stroke-width="2"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Cột bên phải: Hộp Đồng hồ đo & Khung Nhiệm vụ -->
+  <aside class="right-dock">
+    <div class="side-card">
+      <div class="card-title"><span>📟 Dụng cụ đo điện</span></div>
+      <div class="meter-grid">
+        <button class="meter-btn" data-add="voltmeter">
+          <svg viewBox="0 0 44 44">
+            <rect x="10" y="2" width="24" height="26" rx="7" fill="#1e293b"/>
+            <rect x="13" y="5" width="18" height="16" rx="4" fill="#f59e0b"/>
+            <rect x="15" y="11" width="14" height="7" rx="2" fill="#fff"/>
+            <line x1="7" y1="24" x2="3" y2="40" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="37" y1="24" x2="41" y2="40" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round"/>
+          </svg>
+          <span>Hiệu thế<br><small style="color:var(--muted);font-weight:500">(Vôn kế)</small></span>
+        </button>
+
+        <button class="meter-btn" data-add="ammeter">
+          <svg viewBox="0 0 44 44">
+            <rect x="4" y="8" width="36" height="28" rx="7" fill="#f8fafc" stroke="#475569" stroke-width="2.5"/>
+            <rect x="9" y="20" width="26" height="10" rx="2" fill="#0f172a"/>
+            <text x="22" y="17" fill="#0f172a" font-size="7.5" font-weight="800" text-anchor="middle">Cường độ</text>
+            <text x="22" y="27.5" fill="#4cf08a" font-size="7" font-weight="700" text-anchor="middle">0.00 A</text>
+          </svg>
+          <span>Cường độ<br><small style="color:var(--muted);font-weight:500">(Ampe kế)</small></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="side-card task-card" id="taskCard">
+      <div class="card-title">
+        <span id="taskHeaderTitle">🎯 Thử thách</span>
+        <b id="scoreLbl" style="color:var(--blue)">0 điểm</b>
+      </div>
+      <div id="taskBody"></div>
+      <div class="top-actions" id="taskBtns" style="margin-top:4px">
+        <button class="btn accent" id="loadTaskBtn" style="flex:1;justify-content:center">📥 Tải lại</button>
+        <button class="btn" id="hintTaskBtn" style="display:none;justify-content:center">💡 Gợi ý</button>
+        <button class="btn success" id="checkTaskBtn" style="flex:1;justify-content:center">✅ Kiểm tra</button>
+      </div>
+      <div>
+        <div class="prog-bar"><i id="progBar"></i></div>
+        <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:4px">
+          <span id="progLbl">Màn 1/4</span>
+          <span>Bấm "Quay lại Phòng 3D" để đổi trạm</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Thanh Inspector nổi ở đáy -->
+  <div class="bottom-inspector" id="insp"></div>
+
+  <!-- Trợ lý Robo góc dưới trái -->
+  <div class="robo-toast">
+    <svg class="robo-avatar" id="robot" viewBox="0 0 78 96">
+      <line x1="39" y1="4" x2="39" y2="16" stroke="#1d2b53" stroke-width="3"/>
+      <circle id="roboAnt" cx="39" cy="5" r="5" fill="#ff6b57"/>
+      <rect x="8" y="16" width="62" height="50" rx="16" fill="#1fb59a" stroke="#1d2b53" stroke-width="3"/>
+      <circle cx="26" cy="38" r="9" fill="#fff"/><circle cx="52" cy="38" r="9" fill="#fff"/>
+      <circle cx="27" cy="39" r="4" fill="#1d2b53"/><circle cx="53" cy="39" r="4" fill="#1d2b53"/>
+      <path id="roboMouth" d="M26 54 Q39 62 52 54" stroke="#1d2b53" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <rect x="18" y="68" width="42" height="24" rx="8" fill="#ffc93c" stroke="#1d2b53" stroke-width="3"/>
+      <path d="M36 73 L32 81 L39 81 L35 89 L45 79 L38 79 Z" fill="#1d2b53"/>
+    </svg>
+    <div class="robo-bubble" id="bubble" role="status" aria-live="polite">
+      Chào mừng bạn! 🤖 Hãy tương tác với mạch điện trên bàn hoặc bấm <b>🚶 Quay lại Phòng 3D</b> để tham quan các khu vực khác nhé!
+    </div>
+  </div>
+
+  <!-- Bảng trạng thái góc dưới phải -->
+  <div class="status-corner" id="statPill">
+    Trạng thái: <b>Đang lắp mạch</b> · <span id="wireCountTxt">0 thiết bị</span>
+  </div>
+</div>
+
+<!-- Khởi chạy ứng dụng qua ES6 Module -->
+<script type="module" src="js/main.js?v=25"></script>
+</body>
+</html>

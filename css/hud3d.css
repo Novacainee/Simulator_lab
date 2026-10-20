@@ -1,0 +1,280 @@
+/* ==========================================================================
+   css/hud3d.css - Giao diện 3D HUD, Banner, Menu Khu Vực, Joystick ảo
+   ========================================================================== */
+
+#room3DWrap {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+}
+
+#cv3d {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+
+#cv3d:active {
+  cursor: grabbing;
+}
+
+/* Banner trung tâm phía trên giống YooBook */
+.top-banner-3d {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+  padding: 6px 36px 9px;
+  border-radius: 0 0 24px 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #0f766e;
+  letter-spacing: 0.02em;
+  border: 2px solid #cbd5e1;
+  border-top: 0;
+  pointer-events: none;
+}
+
+.top-banner-3d span {
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+/* Nút Menu góc trái trên */
+.menu-btn-3d {
+  position: fixed;
+  top: 16px;
+  left: 18px;
+  z-index: 15;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  padding: 9px 18px;
+  border-radius: 99px;
+  font-weight: 700;
+  font-size: 0.86rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+  transition: var(--transition);
+}
+
+.menu-btn-3d:hover {
+  background: #0f172a;
+  transform: scale(1.03);
+  border-color: #2dd4bf;
+}
+
+/* Bảng chọn khu vực nhanh khi bấm Menu */
+.menu-dropdown-3d {
+  position: fixed;
+  top: 64px;
+  left: 18px;
+  z-index: 15;
+  width: 300px;
+  background: rgba(15, 23, 42, 0.94);
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.menu-dropdown-3d.open {
+  display: flex;
+}
+
+.menu-dropdown-3d h4 {
+  margin: 2px 6px 4px;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+}
+
+.zone-jump-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 11px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: var(--transition);
+}
+
+.zone-jump-btn:hover {
+  background: #0d9488;
+  border-color: #2dd4bf;
+  transform: translateX(4px);
+}
+
+.zone-jump-btn small {
+  font-size: 0.68rem;
+  opacity: 0.85;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+/* Tooltip khi trỏ chuột vào bàn hoặc nút 3D */
+#hoverLabel3D {
+  position: fixed;
+  z-index: 14;
+  pointer-events: none;
+  display: none;
+  background: rgba(15, 23, 42, 0.92);
+  color: #fff;
+  border: 1.5px solid #fbbf24;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transform: translate(-50%, -130%);
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* Hướng dẫn điều khiển 3D ở đáy giữa */
+.hud-help-3d {
+  position: fixed;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  background: rgba(15, 23, 42, 0.82);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 7px 18px;
+  border-radius: 99px;
+  font-size: 0.76rem;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.hud-help-3d b {
+  color: #fbbf24;
+}
+
+/* Cụm nút di chuyển (Joystick ảo) góc dưới phải */
+.joy-wrap {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 15;
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: 2.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), inset 0 0 12px rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.joy-ring {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+.joy-arr {
+  position: absolute;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.72rem;
+  pointer-events: none;
+  font-weight: 800;
+}
+
+.joy-arr.up { top: 6px; left: 50%; transform: translateX(-50%); }
+.joy-arr.dn { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.joy-arr.lt { left: 8px; top: 50%; transform: translateY(-50%); }
+.joy-arr.rt { right: 8px; top: 50%; transform: translateY(-50%); }
+
+.joy-knob {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #cbd5e1);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 800;
+  transition: transform 0.05s ease-out;
+}
+
+@media (max-width: 900px) {
+  .top-banner-3d { font-size: 0.82rem; padding: 5px 20px 8px; }
+  .hud-help-3d { font-size: 0.68rem; gap: 8px; padding: 5px 12px; bottom: 10px; }
+  .joy-wrap { width: 92px; height: 92px; right: 14px; bottom: 14px; }
+  .joy-knob { width: 40px; height: 40px; }
+}
+
+/* Huy hiệu hiển thị GPU rời & Chế độ tiết kiệm năng lượng 60FPS */
+.gpu-badge-3d {
+  position: fixed;
+  top: 16px;
+  right: 18px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  z-index: 15;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.gpu-badge-3d .gpu-dot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #22c55e;
+  flex-shrink: 0;
+}
+

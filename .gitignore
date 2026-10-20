@@ -1,0 +1,15 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE directories
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary media & logs
+.tempmediaStorage/
+.system_generated/
+scratch/
+*.log
