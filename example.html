@@ -1,0 +1,2484 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phòng Thí Nghiệm Mạch Điện 3D – Tương tác & Thực hành</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+  --bg-dark: #0b1528;
+  --panel-bg: rgba(255, 255, 255, 0.96);
+  --panel-border: rgba(203, 213, 225, 0.9);
+  --ink: #0f172a;
+  --muted: #475569;
+  --primary: #0d9488;
+  --blue: #2563eb;
+  --accent: #f59e0b;
+  --danger: #ef4444;
+  --success: #10b981;
+  --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 4px 10px -2px rgba(0, 0, 0, 0.2);
+}
+
+* { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: 'Be Vietnam Pro', system-ui, sans-serif; background: #1e293b; color: var(--ink); }
+
+/* ==================== LỚP 1: KHÔNG GIAN PHÒNG 3D (MẶC ĐỊNH) ==================== */
+#room3DWrap { position: fixed; inset: 0; z-index: 1; }
+#cv3d { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#cv3d:active { cursor: grabbing; }
+
+/* Banner giữa phía trên giống YooBook */
+.top-banner-3d {
+  position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 12;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+  padding: 6px 36px 9px; border-radius: 0 0 24px 24px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 8px;
+  font-weight: 800; font-size: .95rem; color: #0f766e; letter-spacing: .02em;
+  border: 2px solid #cbd5e1; border-top: 0;
+}
+.top-banner-3d span { background: #f59e0b; color: #fff; font-size: .7rem; padding: 2px 8px; border-radius: 99px; }
+
+/* Nút Menu góc trái trên giống ảnh mẫu */
+.menu-btn-3d {
+  position: fixed; top: 16px; left: 18px; z-index: 15;
+  background: rgba(15, 23, 42, 0.88); color: #fff; border: 1.5px solid rgba(255,255,255,0.2);
+  padding: 9px 18px; border-radius: 99px; font: inherit; font-weight: 700; font-size: .86rem;
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.35); backdrop-filter: blur(8px); transition: .15s;
+}
+.menu-btn-3d:hover { background: #0f172a; transform: scale(1.03); }
+
+/* Bảng chọn khu vực nhanh khi bấm Menu */
+.menu-dropdown-3d {
+  position: fixed; top: 64px; left: 18px; z-index: 15; width: 280px;
+  background: rgba(15, 23, 42, 0.94); color: #fff; border: 1.5px solid rgba(255,255,255,0.18);
+  border-radius: 16px; padding: 10px; box-shadow: var(--shadow); backdrop-filter: blur(12px);
+  display: none; flex-direction: column; gap: 6px;
+}
+.menu-dropdown-3d.open { display: flex; }
+.menu-dropdown-3d h4 { margin: 2px 6px 4px; font-size: .74rem; text-transform: uppercase; color: #94a3b8; letter-spacing: .05em; }
+.zone-jump-btn {
+  background: rgba(255,255,255,0.08); color: #f8fafc; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; padding: 8px 11px; font: inherit; font-size: .78rem; font-weight: 600;
+  text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: .12s;
+}
+.zone-jump-btn:hover { background: #0d9488; border-color: #2dd4bf; transform: translateX(3px); }
+.zone-jump-btn small { font-size: .68rem; opacity: .75; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 6px; }
+
+/* Hướng dẫn điều khiển 3D ở đáy giữa */
+.hud-help-3d {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 12;
+  background: rgba(15, 23, 42, 0.82); color: #f1f5f9; border: 1px solid rgba(255,255,255,0.18);
+  padding: 7px 16px; border-radius: 99px; font-size: .76rem; pointer-events: none;
+  backdrop-filter: blur(6px); display: flex; gap: 14px; align-items: center; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.hud-help-3d b { color: #fbbf24; }
+
+/* Tooltip khi trỏ chuột vào bàn hoặc nút 3D */
+#hoverLabel3D {
+  position: fixed; z-index: 14; pointer-events: none; display: none;
+  background: rgba(15, 23, 42, 0.92); color: #fff; border: 1.5px solid #fbbf24;
+  padding: 6px 12px; border-radius: 10px; font-size: .78rem; font-weight: 700;
+  transform: translate(-50%, -130%); white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+
+/* Cụm nút di chuyển (Joystick ảo) góc dưới bên phải giống ảnh mẫu */
+.joy-wrap {
+  position: fixed; right: 24px; bottom: 24px; z-index: 15;
+  width: 112px; height: 112px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22); border: 2.5px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3), inset 0 0 12px rgba(255,255,255,0.25);
+  backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+.joy-ring {
+  position: absolute; inset: 8px; border-radius: 50%;
+  border: 1.5px dashed rgba(255,255,255,0.45); pointer-events: none;
+}
+.joy-arr {
+  position: absolute; color: rgba(255,255,255,0.75); font-size: .7rem; pointer-events: none; font-weight: 800;
+}
+.joy-arr.up { top: 5px; left: 50%; transform: translateX(-50%); }
+.joy-arr.dn { bottom: 5px; left: 50%; transform: translateX(-50%); }
+.joy-arr.lt { left: 7px; top: 50%; transform: translateY(-50%); }
+.joy-arr.rt { right: 7px; top: 50%; transform: translateY(-50%); }
+.joy-knob {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #cbd5e1);
+  border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #475569; font-size: .85rem; font-weight: 800; transition: transform .05s;
+}
+
+/* ==================== LỚP 2: BÀN THỰC HÀNH MẠCH ĐIỆN 2D (OVERLAY KHI VÀO TRẠM) ==================== */
+#studioOverlay {
+  position: fixed; inset: 0; z-index: 30; background: var(--bg-dark);
+  display: none; opacity: 0; transition: opacity .25s ease;
+}
+#studioOverlay.active { display: block; opacity: 1; }
+
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; z-index: 1; }
+
+.topbar {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 40; display: flex; align-items: center; gap: 8px;
+  background: var(--panel-bg); border: 1.5px solid var(--panel-border);
+  padding: 6px 10px; border-radius: 16px; box-shadow: var(--shadow);
+  backdrop-filter: blur(10px); max-width: 96vw; flex-wrap: wrap; justify-content: center;
+}
+.back-3d-btn {
+  background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; border: 0;
+  padding: 6px 13px; border-radius: 10px; font: inherit; font-size: .78rem; font-weight: 800;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  box-shadow: 0 3px 10px rgba(13, 148, 136, 0.4); transition: .15s;
+}
+.back-3d-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+.mode-tabs { display: flex; gap: 3px; background: #f1f5f9; padding: 3px; border-radius: 11px; }
+.mode-tabs button {
+  background: transparent; color: var(--muted); border: 0; padding: 5px 11px;
+  border-radius: 8px; font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer; transition: .15s;
+}
+.mode-tabs button.on { background: var(--ink); color: #fff; box-shadow: 0 2px 6px rgba(15,23,42,.25); }
+.mode-tabs button:hover:not(.on) { color: var(--ink); background: #e2e8f0; }
+
+.divider { width: 1.5px; height: 24px; background: #e2e8f0; margin: 0 2px; }
+
+.top-actions { display: flex; align-items: center; gap: 5px; }
+.btn {
+  font: inherit; font-weight: 700; font-size: .75rem; border: 1.5px solid transparent;
+  border-radius: 9px; padding: 5px 10px; cursor: pointer; display: inline-flex;
+  align-items: center; gap: 5px; transition: .12s; background: #f1f5f9; color: var(--ink);
+}
+.btn:hover { background: #e2e8f0; }
+.btn:active { transform: scale(.96); }
+.btn.primary { background: var(--blue); color: #fff; }
+.btn.accent { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+.btn.success { background: var(--success); color: #fff; }
+.btn.danger { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.btn.cut-active { background: var(--danger); color: #fff; box-shadow: 0 0 0 3px rgba(239,68,68,.35); }
+
+/* Khay linh kiện dọc bên trái */
+.left-dock {
+  position: fixed; left: 14px; top: 74px; bottom: 14px; width: 106px;
+  z-index: 35; display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.comp-drawer {
+  pointer-events: auto; background: #f8fafc; border: 2px solid #cbd5e1;
+  border-radius: 14px; padding: 6px; display: flex; flex-direction: column;
+  gap: 5px; overflow-y: auto; flex: 1; box-shadow: var(--shadow);
+}
+.comp-drawer::-webkit-scrollbar { width: 4px; }
+.comp-drawer::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+.item-btn {
+  background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  padding: 6px 4px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; cursor: pointer; transition: .12s;
+  font: inherit; font-size: .72rem; font-weight: 700; color: var(--ink); min-height: 62px; flex-shrink: 0;
+}
+.item-btn:hover { border-color: var(--blue); background: #eff6ff; transform: translateY(-1px); }
+.item-btn svg { width: 64px; height: 32px; display: block; overflow: visible; }
+
+.view-switcher {
+  pointer-events: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  background: var(--panel-bg); padding: 6px; border-radius: 12px;
+  border: 2px solid #cbd5e1; box-shadow: var(--shadow); flex-shrink: 0;
+}
+.view-btn {
+  background: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 8px;
+  height: 38px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: .15s; padding: 0;
+}
+.view-btn.on { background: #fffbeb; border-color: #0f172a; box-shadow: inset 0 0 0 1px #0f172a; }
+
+/* Cột bên phải trong Studio */
+.right-dock {
+  position: fixed; right: 14px; top: 74px; width: 320px; max-height: calc(100vh - 96px);
+  z-index: 35; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+}
+.side-card {
+  pointer-events: auto; background: var(--panel-bg); border: 1.5px solid var(--panel-border);
+  border-radius: 16px; padding: 11px 13px; box-shadow: var(--shadow); backdrop-filter: blur(10px);
+}
+.card-title {
+  margin: 0 0 8px 0; font-size: .78rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--muted); display: flex; justify-content: space-between; align-items: center;
+}
+.meter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.meter-btn {
+  background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 11px; padding: 7px 6px;
+  display: flex; align-items: center; gap: 8px; cursor: pointer; font: inherit;
+  font-size: .75rem; font-weight: 700; color: var(--ink); transition: .12s;
+}
+.meter-btn:hover { border-color: var(--blue); background: #eff6ff; }
+.meter-btn svg { width: 34px; height: 34px; flex-shrink: 0; }
+
+.task-card { display: none; flex-direction: column; gap: 8px; overflow-y: auto; }
+.task-card.show { display: flex; }
+.task-box { background: #f1f5f9; border-radius: 11px; padding: 9px 11px; border-left: 4px solid var(--blue); }
+.task-box h4 { margin: 0 0 4px 0; font-size: .82rem; color: var(--ink); }
+.task-box p { margin: 0; font-size: .75rem; color: #334155; line-height: 1.42; }
+
+.pinned-hints { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.hint-item {
+  background: #fffbeb; border: 1.5px solid #fde68a; border-left: 4px solid var(--accent);
+  border-radius: 9px; padding: 7px 9px; font-size: .74rem; line-height: 1.38; color: #78350f;
+  cursor: pointer; transition: .12s;
+}
+.hint-item:hover { background: #fef3c7; }
+.hint-item b { color: #b45309; }
+
+.prog-bar { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+.prog-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--success)); transition: width .25s; }
+.quiz-list { display: grid; grid-template-columns: 1fr; gap: 5px; margin-top: 6px; }
+.quiz-opt {
+  background: #fff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 9px;
+  font: inherit; font-size: .75rem; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left;
+}
+.quiz-opt:hover { background: #eff6ff; border-color: var(--blue); }
+
+/* Thanh chỉnh thông số nổi ở đáy */
+.bottom-inspector {
+  position: fixed; bottom: 16px; left: 50%; transform: translate(-50%, 130%);
+  z-index: 45; background: var(--panel-bg); border: 2px solid #cbd5e1;
+  border-radius: 16px; padding: 10px 16px; box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 14px; transition: transform .22s cubic-bezier(.16,1,.3,1);
+  backdrop-filter: blur(12px); max-width: 92vw; flex-wrap: wrap;
+}
+.bottom-inspector.open { transform: translate(-50%, 0); }
+.insp-head { display: flex; flex-direction: column; border-right: 1.5px solid #e2e8f0; padding-right: 12px; }
+.insp-head strong { font-size: .83rem; color: var(--ink); }
+.insp-head span { font-size: .72rem; color: var(--blue); font-weight: 700; }
+.insp-ctrl { display: flex; align-items: center; gap: 10px; }
+.insp-ctrl label { font-size: .76rem; font-weight: 700; color: var(--muted); }
+.insp-ctrl input[type=range] { width: 130px; accent-color: var(--blue); cursor: pointer; }
+.num-input-wrap {
+  display: flex; align-items: center; gap: 4px; background: #fff;
+  border: 1.8px solid var(--ink); border-radius: 8px; padding: 3px 7px;
+}
+.num-input-wrap input[type=number] {
+  width: 56px; border: 0; outline: 0; font: inherit; font-size: .82rem;
+  font-weight: 800; color: var(--blue); text-align: right; background: transparent;
+  user-select: text; -webkit-user-select: text;
+}
+.num-input-wrap b { font-size: .75rem; color: var(--ink); }
+
+/* Trợ lý Robo góc dưới trái */
+.robo-toast {
+  position: fixed; left: 132px; bottom: 16px; z-index: 38;
+  display: flex; align-items: flex-end; gap: 8px; max-width: 410px; pointer-events: none;
+}
+.robo-avatar {
+  pointer-events: auto; width: 54px; height: 66px; flex-shrink: 0; cursor: pointer;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.35)); transition: transform .2s;
+}
+.robo-avatar.bounce { animation: bn .5s; }
+@keyframes bn { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-10px) rotate(-5deg)} 70%{transform:translateY(-3px)} }
+
+.robo-bubble {
+  pointer-events: auto; background: #fffbeb; border: 2px solid #f59e0b;
+  border-radius: 14px 14px 14px 4px; padding: 9px 12px; font-size: .78rem;
+  line-height: 1.42; color: var(--ink); box-shadow: var(--shadow); position: relative;
+}
+.robo-bubble.warn { background: #fef2f2; border-color: var(--danger); }
+.robo-bubble.ok { background: #ecfdf5; border-color: var(--success); }
+
+.status-corner {
+  position: fixed; right: 16px; bottom: 14px; z-index: 32; pointer-events: none;
+  background: rgba(15, 23, 42, 0.82); border: 1px solid rgba(255,255,255,0.18);
+  color: #cbd5e1; padding: 5px 12px; border-radius: 99px; font-size: .72rem;
+  backdrop-filter: blur(6px);
+}
+.status-corner b { color: #38bdf8; }
+
+@media (max-width: 900px) {
+  .hud-help-3d { font-size: .68rem; gap: 8px; padding: 5px 10px; bottom: 10px; }
+  .robo-toast { max-width: 270px; left: 122px; }
+  .right-dock { width: 265px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== PHẦN 1: KHÔNG GIAN PHÒNG THÍ NGHIỆM 3D ==================== -->
+<div id="room3DWrap">
+  <canvas id="cv3d"></canvas>
+
+  <!-- Banner trung tâm phía trên giống ảnh mẫu -->
+  <div class="top-banner-3d">
+    ⚡ Phòng Thí Nghiệm Mạch Điện 3D <span>KHTN THCS</span>
+  </div>
+
+  <!-- Nút Menu góc trên trái để bay nhanh tới từng Khu vực -->
+  <button class="menu-btn-3d" id="menu3DBtn">☰ Menu Khu Vực</button>
+
+  <div class="menu-dropdown-3d" id="menu3DDrop">
+    <h4>📍 Di chuyển nhanh đến khu vực:</h4>
+    <button class="zone-jump-btn" onclick="flyToZone('samples')">
+      <span>🖼️ I. Khu Xem Mạch Mẫu</span><small>3 Bàn mẫu</small>
+    </button>
+    <button class="zone-jump-btn" onclick="flyToZone('doctor')">
+      <span>🩺 II. Khu Bác Sĩ & Đo Mạch</span><small>Sửa lỗi</small>
+    </button>
+    <button class="zone-jump-btn" onclick="flyToZone('free')">
+      <span>🛠️ III. Khu Lắp Mạch Tự Do</span><small>Sáng tạo</small>
+    </button>
+    <button class="zone-jump-btn" onclick="flyToZone('quiz')">
+      <span>🏆 IV. Khu Ôn Tập & Ký Hiệu</span><small>Nút PLAY</small>
+    </button>
+    <hr style="border:0;border-top:1px solid rgba(255,255,255,0.12);margin:4px 0">
+    <button class="zone-jump-btn" style="background:rgba(13,148,136,0.3);border-color:#14b8a6" onclick="openStudio('free')">
+      <span>⚡ Mở ngay Bàn Lắp Mạch 2D</span><small>Trực tiếp</small>
+    </button>
+  </div>
+
+  <!-- Nhãn nổi khi trỏ chuột vào Bàn / Màn hình / Nút PLAY trong phòng 3D -->
+  <div id="hoverLabel3D">🖱️ Bấm để tương tác</div>
+
+  <!-- Hướng dẫn thao tác ở giữa đáy -->
+  <div class="hud-help-3d">
+    <span>🖱️ <b>Giữ chuột trái + Di:</b> Nhìn xung quanh</span>
+    <span>·</span>
+    <span>⚙️ <b>Cuộn chuột:</b> Đi tới / lui</span>
+    <span>·</span>
+    <span>👆 <b>Click vào Bàn / Màn hình / Nút PLAY:</b> Thực hành</span>
+  </div>
+
+  <!-- Nút di chuyển (Joystick ảo) góc dưới phải giống ảnh mẫu -->
+  <div class="joy-wrap" id="joyWrap" title="Kéo tâm tròn để di chuyển trong phòng">
+    <div class="joy-ring"></div>
+    <span class="joy-arr up">▲</span>
+    <span class="joy-arr dn">▼</span>
+    <span class="joy-arr lt">◀</span>
+    <span class="joy-arr rt">▶</span>
+    <div class="joy-knob" id="joyKnob">✥</div>
+  </div>
+</div>
+
+<!-- ==================== PHẦN 2: BÀN THỰC HÀNH MẠCH ĐIỆN CHI TIẾT (STUDIO OVERLAY) ==================== -->
+<div id="studioOverlay">
+  <canvas id="cv"></canvas>
+
+  <nav class="topbar">
+    <button class="back-3d-btn" onclick="closeStudio()">🚶 Quay lại Phòng 3D</button>
+
+    <div class="divider"></div>
+
+    <div class="mode-tabs" id="modeTabs">
+      <button data-m="free" class="on">🛠️ Tự do lắp mạch</button>
+      <button data-m="build">🎯 Thử thách Đo & Lắp</button>
+      <button data-m="doc">🩺 Bác sĩ Mạch</button>
+      <button data-m="sym">📐 Đố vui Ký hiệu</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="top-actions">
+      <button class="btn" id="flowBtn">🔵 Hạt Electron (- → +)</button>
+      <button class="btn" id="cutBtn">✂️ Cắt dây</button>
+      <button class="btn accent" id="presetBtn">⚡ Đổi mạch mẫu</button>
+      <button class="btn danger" id="clearBtn">🗑 Xóa bàn</button>
+    </div>
+  </nav>
+
+  <!-- Khay linh kiện dọc bên trái chuẩn PhET -->
+  <aside class="left-dock" aria-label="Khay linh kiện">
+    <div class="comp-drawer">
+      <button class="item-btn" onclick="addComp('wire_seg')">
+        <svg viewBox="0 0 64 28">
+          <defs><linearGradient id="gWire" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f3a683"/><stop offset="50%" stop-color="#c4512d"/><stop offset="100%" stop-color="#6e2611"/></linearGradient></defs>
+          <rect x="6" y="10" width="52" height="8" rx="4" fill="url(#gWire)" stroke="#5a1e0c" stroke-width="1"/>
+        </svg>
+        <span>Dây nối</span>
+      </button>
+
+      <button class="item-btn" onclick="addComp('battery')">
+        <svg viewBox="0 0 64 28">
+          <defs>
+            <linearGradient id="gBatB" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#64748b"/><stop offset="45%" stop-color="#1e293b"/><stop offset="100%" stop-color="#090d16"/></linearGradient>
+            <linearGradient id="gBatC" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fde68a"/><stop offset="50%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#b45309"/></linearGradient>
+          </defs>
+          <rect x="55" y="10" width="3" height="8" rx="1" fill="#94a3b8"/>
+          <rect x="6" y="5" width="32" height="18" rx="2" fill="url(#gBatB)" stroke="#0f172a"/>
+          <rect x="38" y="5" width="17" height="18" rx="1" fill="url(#gBatC)" stroke="#92400e"/>
+        </svg>
+        <span>Pin</span>
+      </button>
+
+      <button class="item-btn" onclick="addComp('bulb')">
+        <svg viewBox="0 0 64 34">
+          <circle cx="32" cy="12" r="10" fill="rgba(226,232,240,0.55)" stroke="#64748b" stroke-width="1.3"/>
+          <path d="M29 20 L27 10 Q32 7 37 10 L35 20" fill="none" stroke="#d9534f" stroke-width="1.6"/>
+          <rect x="27" y="20" width="10" height="8" rx="1.5" fill="#94a3b8" stroke="#475569" stroke-width="1"/>
+          <line x1="27" y1="24" x2="37" y2="24" stroke="#475569" stroke-width="1"/>
+          <path d="M29 28 L35 28 L33 31 L31 31 Z" fill="#1e293b"/>
+        </svg>
+        <span>Đèn tròn</span>
+      </button>
+
+      <button class="item-btn" onclick="addComp('resistor')">
+        <svg viewBox="0 0 64 28">
+          <defs><linearGradient id="gRes" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff3d6"/><stop offset="55%" stop-color="#e6c28b"/><stop offset="100%" stop-color="#b58950"/></linearGradient></defs>
+          <rect x="8" y="7" width="48" height="14" rx="7" fill="url(#gRes)" stroke="#8c6239" stroke-width="1"/>
+          <rect x="18" y="7" width="4" height="14" fill="#8b4513"/>
+          <rect x="27" y="7" width="4" height="14" fill="#111"/>
+          <rect x="35" y="7" width="4" height="14" fill="#111"/>
+          <rect x="45" y="7" width="3.5" height="14" fill="#eab308"/>
+        </svg>
+        <span>Điện trở</span>
+      </button>
+
+      <button class="item-btn" onclick="addComp('switch')">
+        <svg viewBox="0 0 64 28">
+          <rect x="7" y="17" width="17" height="6" rx="3" fill="url(#gWire)" stroke="#5a1e0c"/>
+          <rect x="40" y="17" width="17" height="6" rx="3" fill="url(#gWire)" stroke="#5a1e0c"/>
+          <line x1="22" y1="20" x2="38" y2="5" stroke="#d97757" stroke-width="5.5" stroke-linecap="round"/>
+          <circle cx="22" cy="20" r="4.5" fill="#cbd5e1" stroke="#1e293b" stroke-width="1.5"/>
+        </svg>
+        <span>Công tắc</span>
+      </button>
+
+      <button class="item-btn" onclick="addComp('fuse')">
+        <svg viewBox="0 0 64 28">
+          <rect x="12" y="7" width="40" height="14" fill="rgba(148,163,184,0.25)" stroke="#64748b" stroke-width="1.3"/>
+          <rect x="10" y="6" width="6" height="16" fill="#94a3b8"/>
+          <rect x="48" y="6" width="6" height="16" fill="#94a3b8"/>
+          <path d="M16 14 Q24 8 32 14 T48 14" fill="none" stroke="#eab308" stroke-width="2"/>
+        </svg>
+        <span>Cầu chì</span>
+      </button>
+
+      <button class="item-btn" onclick="addComp('bell')">
+        <svg viewBox="0 0 64 28">
+          <path d="M18 21 A14 14 0 0 1 46 21 Z" fill="#ef4444" stroke="#991b1b" stroke-width="1.3"/>
+          <circle cx="32" cy="7" r="2.5" fill="#fbbf24"/>
+          <circle cx="49" cy="17" r="3.5" fill="#fbbf24" stroke="#92400e"/>
+        </svg>
+        <span>Chuông điện</span>
+      </button>
+    </div>
+
+    <div class="view-switcher" id="viewSeg">
+      <button data-v="real" class="view-btn on" title="Chế độ Hình ảnh thực tế (PhET)">
+        <svg width="36" height="18" viewBox="0 0 36 18">
+          <rect x="3" y="3" width="19" height="12" rx="1.5" fill="#1e293b"/>
+          <rect x="22" y="3" width="10" height="12" rx="1" fill="#f59e0b"/>
+          <rect x="32" y="6" width="2" height="6" fill="#94a3b8"/>
+        </svg>
+      </button>
+      <button data-v="schem" class="view-btn" title="Chế độ Sơ đồ ký hiệu SGK">
+        <svg width="36" height="18" viewBox="0 0 36 18">
+          <line x1="3" y1="9" x2="15" y2="9" stroke="#0f172a" stroke-width="2"/>
+          <line x1="15" y1="4" x2="15" y2="14" stroke="#0f172a" stroke-width="3.2"/>
+          <line x1="21" y1="1.5" x2="21" y2="16.5" stroke="#0f172a" stroke-width="2"/>
+          <line x1="21" y1="9" x2="33" y2="9" stroke="#0f172a" stroke-width="2"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Cột bên phải: Hộp Đồng hồ đo & Khung Nhiệm vụ -->
+  <aside class="right-dock">
+    <div class="side-card">
+      <div class="card-title"><span>📟 Dụng cụ đo điện</span></div>
+      <div class="meter-grid">
+        <button class="meter-btn" onclick="addComp('voltmeter')">
+          <svg viewBox="0 0 44 44">
+            <rect x="10" y="2" width="24" height="26" rx="7" fill="#1e293b"/>
+            <rect x="13" y="5" width="18" height="16" rx="4" fill="#f59e0b"/>
+            <rect x="15" y="11" width="14" height="7" rx="2" fill="#fff"/>
+            <line x1="7" y1="24" x2="3" y2="40" stroke="#111" stroke-width="3.5" stroke-linecap="round"/>
+            <line x1="37" y1="24" x2="41" y2="40" stroke="#dc2626" stroke-width="3.5" stroke-linecap="round"/>
+          </svg>
+          <span>Hiệu thế<br><small style="color:var(--muted);font-weight:500">(Vôn kế)</small></span>
+        </button>
+
+        <button class="meter-btn" onclick="addComp('ammeter')">
+          <svg viewBox="0 0 44 44">
+            <rect x="4" y="8" width="36" height="28" rx="7" fill="#f8fafc" stroke="#475569" stroke-width="2.5"/>
+            <rect x="9" y="20" width="26" height="10" rx="2" fill="#0f172a"/>
+            <text x="22" y="17" fill="#0f172a" font-size="7.5" font-weight="800" text-anchor="middle">Cường độ</text>
+            <text x="22" y="27.5" fill="#4cf08a" font-size="7" font-weight="700" text-anchor="middle">0.00 A</text>
+          </svg>
+          <span>Cường độ<br><small style="color:var(--muted);font-weight:500">(Ampe kế)</small></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="side-card task-card" id="taskCard">
+      <div class="card-title">
+        <span id="taskHeaderTitle">🎯 Thử thách</span>
+        <b id="scoreLbl" style="color:var(--blue)">0 điểm</b>
+      </div>
+      <div id="taskBody"></div>
+      <div class="top-actions" id="taskBtns" style="margin-top:4px">
+        <button class="btn accent" id="loadTaskBtn" style="flex:1;justify-content:center">📥 Tải lại</button>
+        <button class="btn" id="hintTaskBtn" style="display:none;justify-content:center">💡 Gợi ý</button>
+        <button class="btn success" id="checkTaskBtn" style="flex:1;justify-content:center">✅ Kiểm tra</button>
+      </div>
+      <div>
+        <div class="prog-bar"><i id="progBar"></i></div>
+        <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:4px">
+          <span id="progLbl">Màn 1/4</span>
+          <span>Bấm "Quay lại Phòng 3D" để đổi trạm</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="bottom-inspector" id="insp"></div>
+
+  <div class="robo-toast">
+    <svg class="robo-avatar" id="robot" viewBox="0 0 78 96" onclick="say('💡 Mẹo nhỏ: Em có thể bấm nút <b>🚶 Quay lại Phòng 3D</b> ở góc trên bên trái bất cứ lúc nào để đi dạo sang khu vực khác nhé!')">
+      <line x1="39" y1="4" x2="39" y2="16" stroke="#1d2b53" stroke-width="3"/>
+      <circle id="roboAnt" cx="39" cy="5" r="5" fill="#ff6b57"/>
+      <rect x="8" y="16" width="62" height="50" rx="16" fill="#1fb59a" stroke="#1d2b53" stroke-width="3"/>
+      <circle cx="26" cy="38" r="9" fill="#fff"/><circle cx="52" cy="38" r="9" fill="#fff"/>
+      <circle cx="27" cy="39" r="4" fill="#1d2b53"/><circle cx="53" cy="39" r="4" fill="#1d2b53"/>
+      <path id="roboMouth" d="M26 54 Q39 62 52 54" stroke="#1d2b53" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <rect x="18" y="68" width="42" height="24" rx="8" fill="#ffc93c" stroke="#1d2b53" stroke-width="3"/>
+      <path d="M36 73 L32 81 L39 81 L35 89 L45 79 L38 79 Z" fill="#1d2b53"/>
+    </svg>
+    <div class="robo-bubble" id="bubble" role="status" aria-live="polite">
+      Chào mừng bạn! 🤖 Hãy tương tác với mạch điện trên bàn hoặc bấm <b>🚶 Quay lại Phòng 3D</b> để tham quan các khu vực khác nhé!
+    </div>
+  </div>
+
+  <div class="status-corner" id="statPill">
+    Trạng thái: <b>Đang lắp mạch</b> · <span id="wireCountTxt">0 thiết bị</span>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let inStudio = false;
+
+function cleanZero(val, eps = 1e-4) { return Math.abs(val) < eps ? 0 : val; }
+function fmt(val, dec = 2) { return cleanZero(val).toFixed(dec); }
+
+/* ==================== 1. ÂM THANH (WEB AUDIO API) ==================== */
+let ac = null, lastBell = 0, lastZap = 0;
+function ctx() {
+  if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+  if (ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function sfxClick(freq = 520) {
+  try {
+    const c = ctx(), o = c.createOscillator(), g = c.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(freq, c.currentTime);
+    o.frequency.exponentialRampToValueAtTime(180, c.currentTime + 0.045);
+    g.gain.setValueAtTime(0.22, c.currentTime);
+    g.gain.linearRampToValueAtTime(0.01, c.currentTime + 0.045);
+    o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.05);
+  } catch(e){}
+}
+function sfxZap() {
+  if (Date.now() - lastZap < 600) return;
+  lastZap = Date.now();
+  try {
+    const c = ctx(), buf = c.createBuffer(1, c.sampleRate * 0.25, c.sampleRate), data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (c.sampleRate * 0.08));
+    const src = c.createBufferSource(), flt = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = buf; flt.type = 'bandpass'; flt.frequency.value = 900;
+    g.gain.value = 0.4; src.connect(flt).connect(g).connect(c.destination); src.start();
+  } catch(e){}
+}
+function sfxBell() {
+  if (Date.now() - lastBell < 160) return;
+  lastBell = Date.now();
+  try {
+    const c = ctx(), o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.value = 1350 + (Math.random() * 80);
+    g.gain.setValueAtTime(0.16, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.005, c.currentTime + 0.12);
+    o.connect(g).connect(c.destination); o.start(); o.stop(c.currentTime + 0.13);
+  } catch(e){}
+}
+function sfxWin() {
+  try {
+    const c = ctx();
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = 'triangle'; o.frequency.value = f;
+      const t0 = c.currentTime + idx * 0.09;
+      g.gain.setValueAtTime(0.2, t0);
+      g.gain.exponentialRampToValueAtTime(0.005, t0 + 0.25);
+      o.connect(g).connect(c.destination); o.start(t0); o.stop(t0 + 0.26);
+    });
+  } catch(e){}
+}
+
+/* ==================== 2. XÂY DỰNG PHÒNG THÍ NGHIỆM 3D (THREE.JS) ==================== */
+const cv3d = $('cv3d');
+const renderer = new THREE.WebGLRenderer({ canvas: cv3d, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x374151);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+// Đặt người chơi ở lối vào nhìn bao quát căn phòng
+camera.position.set(0, 1.7, 9.5);
+let camYaw = 0, camPitch = -0.03;
+let flyAnim = null; // Lưu trạng thái bay mượt khi chọn từ Menu
+
+// Ánh sáng phòng học
+const ambLight = new THREE.AmbientLight(0xffffff, 0.78);
+scene.add(ambLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.55);
+dirLight.position.set(5, 9, 6);
+scene.add(dirLight);
+const pointLight = new THREE.PointLight(0xfffbeb, 0.45, 30);
+pointLight.position.set(0, 4.8, 0);
+scene.add(pointLight);
+
+// Danh sách các vật thể tương tác bấm chuột được trong phòng 3D
+const interactables3D = [];
+
+// Tạo Texture gạch lát sàn trắng sáng như ảnh mẫu YooBook
+function createFloorTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 256;
+  const ctx2 = c.getContext('2d');
+  ctx2.fillStyle = '#f1f5f9';
+  ctx2.fillRect(0, 0, 256, 256);
+  ctx2.strokeStyle = '#cbd5e1';
+  ctx2.lineWidth = 4;
+  ctx2.strokeRect(2, 2, 252, 252);
+  ctx2.strokeStyle = '#e2e8f0';
+  ctx2.lineWidth = 2;
+  ctx2.beginPath();
+  ctx2.moveTo(0, 128); ctx2.lineTo(256, 128);
+  ctx2.moveTo(128, 0); ctx2.lineTo(128, 256);
+  ctx2.stroke();
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(14, 12);
+  return tex;
+}
+
+// Tạo bảng chữ / màn hình treo tường bằng CanvasTexture
+function makeWallBoardTexture(title, subtitle, schemeType) {
+  const c = document.createElement('canvas');
+  c.width = 640; c.height = 380;
+  const g2 = c.getContext('2d');
+
+  // Nền bảng xanh đậm phòng thí nghiệm
+  const grad = g2.createLinearGradient(0, 0, 0, 380);
+  grad.addColorStop(0, '#0f3d2e');
+  grad.addColorStop(1, '#09261c');
+  g2.fillStyle = grad;
+  g2.fillRect(0, 0, 640, 380);
+
+  // Khung viền xám bạc
+  g2.strokeStyle = '#94a3b8';
+  g2.lineWidth = 14;
+  g2.strokeRect(7, 7, 626, 366);
+
+  // Tiêu đề
+  g2.fillStyle = '#fde047';
+  g2.font = '800 28px "Be Vietnam Pro", sans-serif';
+  g2.textAlign = 'center';
+  g2.fillText(title, 320, 56);
+
+  g2.fillStyle = '#e2e8f0';
+  g2.font = '600 18px "Be Vietnam Pro", sans-serif';
+  g2.fillText(subtitle, 320, 88);
+
+  // Vẽ sơ đồ minh họa trên màn hình
+  g2.strokeStyle = '#38bdf8';
+  g2.lineWidth = 5;
+  if (schemeType === 'sample1') {
+    g2.strokeRect(180, 130, 280, 150);
+    g2.fillStyle = '#f59e0b'; g2.fillRect(290, 116, 60, 28);
+    g2.fillStyle = '#fef08a'; g2.beginPath(); g2.arc(320, 280, 26, 0, Math.PI * 2); g2.fill(); g2.stroke();
+  } else if (schemeType === 'sample2') {
+    g2.strokeRect(160, 130, 320, 150);
+    g2.fillStyle = '#f59e0b'; g2.fillRect(290, 116, 60, 28);
+    g2.fillStyle = '#fef08a';
+    g2.beginPath(); g2.arc(250, 280, 24, 0, Math.PI * 2); g2.fill(); g2.stroke();
+    g2.beginPath(); g2.arc(390, 280, 24, 0, Math.PI * 2); g2.fill(); g2.stroke();
+  } else if (schemeType === 'sample3') {
+    g2.strokeRect(170, 120, 300, 110);
+    g2.strokeRect(170, 230, 300, 70);
+    g2.fillStyle = '#f59e0b'; g2.fillRect(290, 106, 60, 28);
+    g2.fillStyle = '#fef08a';
+    g2.beginPath(); g2.arc(320, 230, 22, 0, Math.PI * 2); g2.fill(); g2.stroke();
+    g2.beginPath(); g2.arc(320, 300, 22, 0, Math.PI * 2); g2.fill(); g2.stroke();
+  } else if (schemeType === 'doctor') {
+    g2.strokeStyle = '#f87171';
+    g2.strokeRect(180, 130, 280, 150);
+    g2.fillStyle = '#ef4444';
+    g2.font = '800 32px sans-serif';
+    g2.fillText('⚡ CHẨN ĐOÁN & SỬA MẠCH', 320, 215);
+  }
+
+  // Nút gợi ý bấm vào màn hình
+  g2.fillStyle = '#f59e0b';
+  g2.beginPath();
+  g2.roundRect(200, 318, 240, 40, 20);
+  g2.fill();
+  g2.fillStyle = '#0f172a';
+  g2.font = '800 18px "Be Vietnam Pro", sans-serif';
+  g2.fillText('▶ BẤM ĐỂ THỰC HÀNH', 320, 344);
+
+  return new THREE.CanvasTexture(c);
+}
+
+// Tạo bảng chữ nổi dán trên tường (Signage)
+function makeWallTextSign(mainText, subText, width = 4.2, height = 1.2) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 160;
+  const g2 = c.getContext('2d');
+  g2.clearRect(0, 0, 512, 160);
+  g2.fillStyle = '#ffffff';
+  g2.font = '800 42px "Be Vietnam Pro", sans-serif';
+  g2.textAlign = 'center';
+  g2.shadowColor = 'rgba(0,0,0,0.45)';
+  g2.shadowBlur = 6;
+  g2.fillText(mainText, 256, 64);
+  if (subText) {
+    g2.font = '600 24px "Be Vietnam Pro", sans-serif';
+    g2.fillStyle = '#fef08a';
+    g2.fillText(subText, 256, 112);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+  return new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
+}
+
+// Dựng căn phòng (Sàn gạch trắng, Tường xanh ngọc #318582, Trần xám đậm như ảnh mẫu)
+const ROOM_W = 24, ROOM_D = 20, ROOM_H = 5.6;
+const floorMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(ROOM_W, ROOM_D),
+  new THREE.MeshLambertMaterial({ map: createFloorTexture() })
+);
+floorMesh.rotation.x = -Math.PI / 2;
+scene.add(floorMesh);
+
+const ceilMesh = new THREE.Mesh(
+  new THREE.PlaneGeometry(ROOM_W, ROOM_D),
+  new THREE.MeshBasicMaterial({ color: 0x374151 })
+);
+ceilMesh.rotation.x = Math.PI / 2;
+ceilMesh.position.y = ROOM_H;
+scene.add(ceilMesh);
+
+const wallMat = new THREE.MeshLambertMaterial({ color: 0x318582 }); // Màu xanh ngọc YooBook
+// Tường trước (Bắc: z = -ROOM_D/2)
+const frontWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_H), wallMat);
+frontWall.position.set(0, ROOM_H / 2, -ROOM_D / 2);
+scene.add(frontWall);
+// Tường sau (Nam: z = +ROOM_D/2)
+const backWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_W, ROOM_H), wallMat);
+backWall.position.set(0, ROOM_H / 2, ROOM_D / 2);
+backWall.rotation.y = Math.PI;
+scene.add(backWall);
+// Tường trái (Tây: x = -ROOM_W/2)
+const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_D, ROOM_H), wallMat);
+leftWall.position.set(-ROOM_W / 2, ROOM_H / 2, 0);
+leftWall.rotation.y = Math.PI / 2;
+scene.add(leftWall);
+// Tường phải (Đông: x = +ROOM_W/2)
+const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_D, ROOM_H), wallMat);
+rightWall.position.set(ROOM_W / 2, ROOM_H / 2, 0);
+rightWall.rotation.y = -Math.PI / 2;
+scene.add(rightWall);
+
+// Hàm dựng Bàn thí nghiệm gỗ + Mô hình mạch 3D + Nhân vật học sinh 3D đứng cạnh
+function createExperimentStation({ x, z, rotY, title, subtitle, schemeType, actionData, studentShirt = 0x60a5fa }) {
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  group.rotation.y = rotY;
+
+  // 1. Bàn gỗ thí nghiệm
+  const woodMat = new THREE.MeshLambertMaterial({ color: 0xb46934 });
+  const topMesh = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.1, 1.1), woodMat);
+  topMesh.position.y = 0.95;
+  group.add(topMesh);
+
+  const legGeo = new THREE.BoxGeometry(0.1, 0.95, 0.1);
+  [[-1.0, -0.42], [1.0, -0.42], [-1.0, 0.42], [1.0, 0.42]].forEach(([lx, lz]) => {
+    const leg = new THREE.Mesh(legGeo, woodMat);
+    leg.position.set(lx, 0.475, lz);
+    group.add(leg);
+  });
+
+  // 2. Mô hình Pin & Bóng đèn phát sáng trên mặt bàn
+  const batBody = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.42, 16), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+  batBody.rotation.z = Math.PI / 2;
+  batBody.position.set(-0.5, 1.08, 0);
+  group.add(batBody);
+
+  const batCap = new THREE.Mesh(new THREE.CylinderGeometry(0.112, 0.112, 0.16, 16), new THREE.MeshLambertMaterial({ color: 0xf59e0b }));
+  batCap.rotation.z = Math.PI / 2;
+  batCap.position.set(-0.25, 1.08, 0);
+  group.add(batCap);
+
+  const bulbGlass = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+  bulbGlass.position.set(0.45, 1.18, 0);
+  group.add(bulbGlass);
+
+  // 3. Nhân vật Học sinh 3D đứng cạnh bàn (như ảnh mẫu YooBook)
+  const avatar = new THREE.Group();
+  avatar.position.set(-1.55, 0, 0.15);
+  avatar.rotation.y = 0.35;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), new THREE.MeshLambertMaterial({ color: 0xfde68a }));
+  head.position.y = 1.52;
+  avatar.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshLambertMaterial({ color: 0x271c19 }));
+  hair.position.y = 1.56;
+  avatar.add(hair);
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 0.62, 16), new THREE.MeshLambertMaterial({ color: studentShirt }));
+  torso.position.y = 1.02;
+  avatar.add(torso);
+  const pants = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.55, 16), new THREE.MeshLambertMaterial({ color: 0x1e3a8a }));
+  pants.position.y = 0.45;
+  avatar.add(pants);
+  group.add(avatar);
+
+  // 4. Màn hình bảng đen treo trên tường phía sau bàn
+  const screenMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.8, 2.25),
+    new THREE.MeshBasicMaterial({ map: makeWallBoardTexture(title, subtitle, schemeType) })
+  );
+  screenMesh.position.set(0, 2.55, -1.75);
+  group.add(screenMesh);
+
+  // Gắn dữ liệu tương tác cho cả mặt bàn và màn hình
+  topMesh.userData = actionData;
+  screenMesh.userData = actionData;
+  bulbGlass.userData = actionData;
+  interactables3D.push(topMesh, screenMesh, bulbGlass);
+
+  scene.add(group);
+}
+
+// Hàm tạo Nút "PLAY" 3D màu vàng cam gắn trên tường giống hệt ảnh mẫu YooBook
+function createWallPlayButton({ x, y, z, rotY, labelTop, subTop, btnText, actionData, btnColor = 0xd99b26 }) {
+  const group = new THREE.Group();
+  group.position.set(x, y, z);
+  group.rotation.y = rotY;
+
+  const sign = makeWallTextSign(labelTop, subTop, 4.6, 1.35);
+  sign.position.set(0, 1.35, 0.05);
+  group.add(sign);
+
+  // Tạo texture chữ PLAY trên mặt nút 3D
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 256;
+  const g2 = c.getContext('2d');
+  const grad = g2.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#f59e0b');
+  grad.addColorStop(1, '#b45309');
+  g2.fillStyle = grad;
+  g2.beginPath();
+  g2.roundRect(16, 16, 480, 224, 110);
+  g2.fill();
+  g2.lineWidth = 8;
+  g2.strokeStyle = '#fde68a';
+  g2.stroke();
+  g2.fillStyle = '#ffffff';
+  g2.font = '800 74px "Be Vietnam Pro", sans-serif';
+  g2.textAlign = 'center';
+  g2.textBaseline = 'middle';
+  g2.fillText(btnText, 256, 132);
+
+  const btnMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(2.5, 1.15, 0.28),
+    [
+      new THREE.MeshLambertMaterial({ color: btnColor }),
+      new THREE.MeshLambertMaterial({ color: btnColor }),
+      new THREE.MeshLambertMaterial({ color: btnColor }),
+      new THREE.MeshLambertMaterial({ color: btnColor }),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) }),
+      new THREE.MeshLambertMaterial({ color: btnColor })
+    ]
+  );
+  btnMesh.position.set(0, 0, 0.15);
+  btnMesh.userData = actionData;
+  interactables3D.push(btnMesh);
+  group.add(btnMesh);
+
+  scene.add(group);
+}
+
+/* --- DỰNG 4 KHU VỰC TRONG PHÒNG 3D --- */
+
+// KHU I: KHU XEM MẠCH MẪU (Tường Trái & Tường Chính diện)
+createExperimentStation({
+  x: -9.8, z: -1.5, rotY: Math.PI / 2,
+  title: 'MẪU 1: MẠCH ĐIỆN ĐƠN',
+  subtitle: 'Pin 9V + Khóa K + Đèn tròn + Đồng hồ đo',
+  schemeType: 'sample1',
+  studentShirt: 0x38bdf8,
+  actionData: { label: '⚡ Xem & Tương tác: Mạch Mẫu 1 (Mạch đơn)', mode: 'free', preset: 0 }
+});
+
+createExperimentStation({
+  x: -4.2, z: -7.8, rotY: 0,
+  title: 'MẪU 2: HAI ĐÈN MẮC NỐI TIẾP',
+  subtitle: 'Dòng điện I bằng nhau · Hiệu điện thế chia đều',
+  schemeType: 'sample2',
+  studentShirt: 0x34d399,
+  actionData: { label: '🔗 Xem & Tương tác: Mạch Mẫu 2 (2 Đèn Nối Tiếp)', mode: 'free', preset: 1 }
+});
+
+createExperimentStation({
+  x: 3.8, z: -7.8, rotY: 0,
+  title: 'MẪU 3: HAI ĐÈN MẮC SONG SONG',
+  subtitle: 'Cùng hiệu điện thế U · Đèn sáng mạnh độc lập',
+  schemeType: 'sample3',
+  studentShirt: 0xfbbf24,
+  actionData: { label: '🌟 Xem & Tương tác: Mạch Mẫu 3 (2 Đèn Song Song)', mode: 'free', preset: 2 }
+});
+
+// Biển hiệu Khu I trên tường chính diện
+const bannerZone1 = makeWallTextSign('I. KHU XEM MẠCH ĐIỆN MẪU', 'Bấm vào bàn thí nghiệm hoặc màn hình để đo thử', 6.5, 1.3);
+bannerZone1.position.set(-0.2, 4.45, -9.9);
+scene.add(bannerZone1);
+
+// KHU II: KHU THỰC HÀNH ĐO & BÁC SĨ MẠCH (Tường Phải - Phía trong)
+createExperimentStation({
+  x: 9.8, z: -3.2, rotY: -Math.PI / 2,
+  title: 'II. BÁC SĨ MẠCH & ĐO ĐẠC',
+  subtitle: 'Tìm lỗi mạch bị hỏng & Thực hành mắc đồng hồ đo',
+  schemeType: 'doctor',
+  studentShirt: 0xf87171,
+  actionData: { label: '🩺 Vào Khu Bác Sĩ Mạch (Tìm lỗi & Sửa mạch)', mode: 'doc' }
+});
+
+// KHU III: BÀN THỰC HÀNH TỰ DO Ở TRUNG TÂM PHÒNG
+const centerLabGroup = new THREE.Group();
+centerLabGroup.position.set(0, 0, 1.2);
+const cTable = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.5, 0.95, 24), new THREE.MeshLambertMaterial({ color: 0x0f766e }));
+cTable.position.y = 0.475;
+centerLabGroup.add(cTable);
+const cTop = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 0.12, 24), new THREE.MeshLambertMaterial({ color: 0xf8fafc }));
+cTop.position.y = 0.98;
+centerLabGroup.add(cTop);
+// Mô hình Robo 3D đứng trên bàn trung tâm
+const robo3D = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.65, 0.55), new THREE.MeshLambertMaterial({ color: 0x1fb59a }));
+robo3D.position.set(0, 1.45, 0);
+centerLabGroup.add(robo3D);
+const roboSign = makeWallTextSign('III. BÀN LẮP MẠCH TỰ DO', 'Click vào bàn để tự do chế tạo mạch điện', 3.8, 1.1);
+roboSign.position.set(0, 2.35, 0);
+centerLabGroup.add(roboSign);
+cTop.userData = { label: '🛠️ Mở Bàn Lắp Mạch Tự Do (Sáng tạo)', mode: 'free', preset: 0 };
+robo3D.userData = cTop.userData;
+interactables3D.push(cTop, robo3D);
+scene.add(centerLabGroup);
+
+// KHU IV: KHU LUYỆN TẬP & ÔN TẬP KÝ HIỆU (Tường Phải - Góc ngoài giống hệt ảnh mẫu YooBook)
+createWallPlayButton({
+  x: 11.85, y: 2.3, z: 3.8, rotY: -Math.PI / 2,
+  labelTop: 'IV. LUYỆN TẬP & KÝ HIỆU',
+  subTop: 'Click vào nút PLAY để thực hiện phần ôn tập',
+  btnText: 'PLAY',
+  actionData: { label: '🏆 Bắt đầu Khu Luyện Tập & Đố Vui Ký Hiệu', mode: 'sym' }
+});
+
+// Thêm nút PLAY cho Thử thách Đo & Lắp ở tường trái phía ngoài
+createWallPlayButton({
+  x: -11.85, y: 2.3, z: 4.2, rotY: Math.PI / 2,
+  labelTop: 'THỬ THÁCH ĐO & LẮP MẠCH',
+  subTop: 'Click vào nút PLAY để rèn kỹ năng mắc Ampe kế & Vôn kế',
+  btnText: 'PLAY',
+  btnColor: 0x0ea5e9,
+  actionData: { label: '🎯 Bắt đầu 4 Màn Thử Thách Đo & Lắp Mạch', mode: 'build' }
+});
+
+/* ==================== 3. ĐIỀU KHIỂN DI CHUYỂN & TƯƠNG TÁC TRONG PHÒNG 3D ==================== */
+let isDragging3D = false, pointerDownPos = { x: 0, y: 0 }, prevPointerPos = { x: 0, y: 0 };
+const keys3D = { w: false, a: false, s: false, d: false };
+let joyVec = { x: 0, y: 0 }, isJoyDragging = false;
+const raycaster = new THREE.Raycaster();
+const mouseNDC = new THREE.Vector2();
+
+// Nút bật/tắt Menu Khu Vực
+$('menu3DBtn').onclick = () => $('menu3DDrop').classList.toggle('open');
+
+// Bay mượt mà tới từng khu vực khi chọn trong Menu
+const ZONE_TARGETS = {
+  samples: { x: -1.5, z: -2.5, yaw: 0.25,  pitch: -0.02 },
+  doctor:  { x: 4.5,  z: -3.2, yaw: -1.57, pitch: -0.02 },
+  free:    { x: 0,    z: 5.5,  yaw: 0,     pitch: -0.08 },
+  quiz:    { x: 6.8,  z: 3.8,  yaw: -1.57, pitch: -0.02 }
+};
+
+window.flyToZone = zoneKey => {
+  $('menu3DDrop').classList.remove('open');
+  const t = ZONE_TARGETS[zoneKey];
+  if (!t) return;
+  sfxClick(640);
+  flyAnim = {
+    startX: camera.position.x, startZ: camera.position.z,
+    startYaw: camYaw, startPitch: camPitch,
+    endX: t.x, endZ: t.z, endYaw: t.yaw, endPitch: t.pitch,
+    progress: 0
+  };
+};
+
+// Giữ chuột trái và kéo để nhìn xung quanh + Click để mở trạm thực hành
+cv3d.addEventListener('pointerdown', ev => {
+  if (inStudio) return;
+  $('menu3DDrop').classList.remove('open');
+  isDragging3D = true;
+  flyAnim = null;
+  pointerDownPos = { x: ev.clientX, y: ev.clientY };
+  prevPointerPos = { x: ev.clientX, y: ev.clientY };
+});
+
+window.addEventListener('pointermove', ev => {
+  if (inStudio) return;
+
+  // Cập nhật xoay camera khi giữ chuột trái kéo
+  if (isDragging3D) {
+    const dx = ev.clientX - prevPointerPos.x;
+    const dy = ev.clientY - prevPointerPos.y;
+    prevPointerPos = { x: ev.clientX, y: ev.clientY };
+    camYaw   -= dx * 0.0045;
+    camPitch = Math.max(-0.55, Math.min(0.55, camPitch - dy * 0.0035));
+    return;
+  }
+
+  // Kiểm tra trỏ chuột vào các Bàn thí nghiệm / Màn hình / Nút PLAY 3D
+  mouseNDC.x = (ev.clientX / window.innerWidth) * 2 - 1;
+  mouseNDC.y = -(ev.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouseNDC, camera);
+  const hits = raycaster.intersectObjects(interactables3D);
+  const lbl = $('hoverLabel3D');
+  if (hits.length > 0 && hits[0].object.userData && hits[0].object.userData.label) {
+    cv3d.style.cursor = 'pointer';
+    lbl.style.display = 'block';
+    lbl.style.left = ev.clientX + 'px';
+    lbl.style.top = ev.clientY + 'px';
+    lbl.textContent = hits[0].object.userData.label;
+  } else {
+    cv3d.style.cursor = 'grab';
+    lbl.style.display = 'none';
+  }
+});
+
+window.addEventListener('pointerup', ev => {
+  if (inStudio) return;
+  if (isDragging3D) {
+    isDragging3D = false;
+    const movedDist = Math.hypot(ev.clientX - pointerDownPos.x, ev.clientY - pointerDownPos.y);
+    // Nếu người dùng Click chuột (di chuyển < 6px) vào một trạm 3D
+    if (movedDist < 6 && ev.target === cv3d) {
+      mouseNDC.x = (ev.clientX / window.innerWidth) * 2 - 1;
+      mouseNDC.y = -(ev.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouseNDC, camera);
+      const hits = raycaster.intersectObjects(interactables3D);
+      if (hits.length > 0 && hits[0].object.userData) {
+        const data = hits[0].object.userData;
+        sfxWin();
+        openStudio(data.mode, data.preset);
+      }
+    }
+  }
+});
+
+// Cuộn con lăn chuột để đi tiến tới / lùi lại
+cv3d.addEventListener('wheel', ev => {
+  if (inStudio) return;
+  ev.preventDefault();
+  flyAnim = null;
+  const step = -Math.sign(ev.deltaY) * 0.85;
+  movePlayer3D(step, 0);
+}, { passive: false });
+
+// Bàn phím WASD / Mũi tên
+window.addEventListener('keydown', ev => {
+  const k = ev.key.toLowerCase();
+  if (k === 'w' || ev.key === 'ArrowUp') keys3D.w = true;
+  if (k === 's' || ev.key === 'ArrowDown') keys3D.s = true;
+  if (k === 'a' || ev.key === 'ArrowLeft') keys3D.a = true;
+  if (k === 'd' || ev.key === 'ArrowRight') keys3D.d = true;
+});
+window.addEventListener('keyup', ev => {
+  const k = ev.key.toLowerCase();
+  if (k === 'w' || ev.key === 'ArrowUp') keys3D.w = false;
+  if (k === 's' || ev.key === 'ArrowDown') keys3D.s = false;
+  if (k === 'a' || ev.key === 'ArrowLeft') keys3D.a = false;
+  if (k === 'd' || ev.key === 'ArrowRight') keys3D.d = false;
+});
+
+// Xử lý cụm nút Joystick ảo góc dưới bên phải
+const joyWrap = $('joyWrap'), joyKnob = $('joyKnob');
+function updateJoystick(clientX, clientY) {
+  const r = joyWrap.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  let dx = clientX - cx, dy = clientY - cy;
+  const maxR = 32, dist = Math.hypot(dx, dy);
+  if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
+  joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+  joyVec.x = dx / maxR;
+  joyVec.y = dy / maxR;
+}
+joyWrap.addEventListener('pointerdown', ev => {
+  ev.stopPropagation();
+  joyWrap.setPointerCapture(ev.pointerId);
+  isJoyDragging = true;
+  flyAnim = null;
+  updateJoystick(ev.clientX, ev.clientY);
+});
+joyWrap.addEventListener('pointermove', ev => {
+  if (!isJoyDragging) return;
+  updateJoystick(ev.clientX, ev.clientY);
+});
+joyWrap.addEventListener('pointerup', () => {
+  isJoyDragging = false;
+  joyKnob.style.transform = 'translate(0px, 0px)';
+  joyVec.x = 0; joyVec.y = 0;
+});
+
+function movePlayer3D(forwardDelta, strafeDelta) {
+  const fx = -Math.sin(camYaw), fz = -Math.cos(camYaw);
+  const rx = Math.cos(camYaw),  rz = -Math.sin(camYaw);
+  const nx = camera.position.x + fx * forwardDelta + rx * strafeDelta;
+  const nz = camera.position.z + fz * forwardDelta + rz * strafeDelta;
+  // Giới hạn không đi xuyên tường
+  camera.position.x = Math.max(-ROOM_W / 2 + 1.8, Math.min(ROOM_W / 2 - 1.8, nx));
+  camera.position.z = Math.max(-ROOM_D / 2 + 1.8, Math.min(ROOM_D / 2 - 1.5, nz));
+}
+
+// Chuyển đổi giữa Phòng 3D và Bàn Thực Hành 2D
+window.openStudio = (mode = 'free', presetIdx = null) => {
+  inStudio = true;
+  $('hoverLabel3D').style.display = 'none';
+  $('studioOverlay').classList.add('active');
+  resize2D();
+  if (presetIdx !== null && presetIdx !== undefined) {
+    S.presetIdx = presetIdx;
+    loadPreset(presetIdx);
+  }
+  switchStudioMode(mode);
+};
+
+window.closeStudio = () => {
+  sfxClick(420);
+  inStudio = false;
+  $('studioOverlay').classList.remove('active');
+};
+
+/* ==================== 4. LÕI VẬT LÝ MNA & BÀN LẮP MẠCH 2D ==================== */
+const S = {
+  view: 'real',
+  flow: 'elec',
+  cutMode: false,
+  selectedId: null,
+  presetIdx: 0,
+  shortCircuit: false,
+  ammeterShort: false,
+  docMysteryActive: false
+};
+
+let comps = [], wires = [], sparks = [], nextId = 1;
+
+const COMP_META = {
+  wire_seg:  { name: 'Đoạn dây nối' },
+  battery:   { name: 'Nguồn Pin' },
+  switch:    { name: 'Công tắc (Khóa K)' },
+  bulb:      { name: 'Đèn tròn dây tóc' },
+  resistor:  { name: 'Điện trở (R)' },
+  ammeter:   { name: 'Ampe kế (Đo cường độ)' },
+  voltmeter: { name: 'Đồng hồ Hiệu thế (V)' },
+  fuse:      { name: 'Cầu chì bảo vệ' },
+  bell:      { name: 'Chuông điện' }
+};
+
+function makeComp(type, x, y, opts = {}) {
+  const c = {
+    id: nextId++,
+    type, x, y,
+    rot: opts.rot || 0,
+    v: opts.v ?? (type === 'battery' ? 9 : 0),
+    r: opts.r ?? (type === 'bulb' ? 10 : type === 'resistor' ? 15 : type === 'bell' ? 12 : 10),
+    closed: opts.closed ?? (type === 'switch' ? false : true),
+    blown: false,
+    I: 0, U: 0, P: 0, phase: 0,
+    p0: opts.p0 ? { ...opts.p0 } : { x: x - 52, y: y + 68 },
+    p1: opts.p1 ? { ...opts.p1 } : { x: x + 52, y: y + 68 },
+    connected: false
+  };
+  comps.push(c);
+  return c;
+}
+
+function getTermPos(c, side) {
+  const d = 46;
+  const dir = side === 0 ? -1 : 1;
+  if (c.rot === 0) return { x: c.x + dir * d, y: c.y };
+  return { x: c.x, y: c.y + dir * d };
+}
+
+function addWire(c1, s1, c2, s2) {
+  if (c1 === c2 && s1 === s2) return;
+  const comp1 = comps.find(x => x.id === c1), comp2 = comps.find(x => x.id === c2);
+  if (!comp1 || !comp2 || comp1.type === 'voltmeter' || comp2.type === 'voltmeter') return;
+  const dup = wires.some(w =>
+    (w.c1 === c1 && w.s1 === s1 && w.c2 === c2 && w.s2 === s2) ||
+    (w.c1 === c2 && w.s1 === s2 && w.c2 === c1 && w.s2 === s1)
+  );
+  if (!dup) {
+    wires.push({ id: nextId++, c1, s1, c2, s2, I: 0, phase: 0 });
+    sfxClick(680);
+    solveCircuit(true);
+  }
+}
+
+function solveLinearSystem(A, b) {
+  const n = b.length;
+  for (let i = 0; i < n; i++) {
+    let maxRow = i, maxVal = Math.abs(A[i][i]);
+    for (let k = i + 1; k < n; k++) {
+      if (Math.abs(A[k][i]) > maxVal) { maxVal = Math.abs(A[k][i]); maxRow = k; }
+    }
+    if (maxVal < 1e-18) continue;
+    [A[i], A[maxRow]] = [A[maxRow], A[i]];
+    [b[i], b[maxRow]] = [b[maxRow], b[i]];
+    for (let k = i + 1; k < n; k++) {
+      const f = A[k][i] / A[i][i];
+      b[k] -= f * b[i];
+      for (let j = i; j < n; j++) A[k][j] -= f * A[i][j];
+    }
+  }
+  const x = new Float64Array(n);
+  for (let i = n - 1; i >= 0; i--) {
+    let s = b[i];
+    for (let j = i + 1; j < n; j++) s -= A[i][j] * x[j];
+    x[i] = Math.abs(A[i][i]) > 1e-18 ? s / A[i][i] : 0;
+  }
+  return x;
+}
+
+function distToSegment(p, a, b) {
+  const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+  if (l2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
+}
+
+function findProbeNode(pt, idxOf) {
+  for (let ci = 0; ci < comps.length; ci++) {
+    const c = comps[ci];
+    if (c.type === 'voltmeter') continue;
+    for (let s = 0; s <= 1; s++) {
+      const tp = getTermPos(c, s);
+      if (Math.hypot(pt.x - tp.x, pt.y - tp.y) <= 20) return ci * 2 + s;
+    }
+  }
+  for (let ci = 0; ci < comps.length; ci++) {
+    const c = comps[ci];
+    if (c.type === 'wire_seg') {
+      if (distToSegment(pt, getTermPos(c, 0), getTermPos(c, 1)) <= 12) return ci * 2;
+    }
+  }
+  for (const w of wires) {
+    const c1 = comps.find(x => x.id === w.c1), c2 = comps.find(x => x.id === w.c2);
+    if (c1 && c2 && distToSegment(pt, getTermPos(c1, w.s1), getTermPos(c2, w.s2)) <= 12) {
+      return idxOf(w.c1, w.s1);
+    }
+  }
+  return -1;
+}
+
+function solveCircuit(triggerFeedback = false) {
+  const N = comps.length * 2;
+  if (N === 0) { updateHUD(); updateInspector(); return; }
+
+  const idxOf = (cId, side) => {
+    const ci = comps.findIndex(c => c.id === cId);
+    return ci >= 0 ? ci * 2 + side : -1;
+  };
+
+  const G = Array.from({ length: N }, () => new Float64Array(N));
+  const rhs = new Float64Array(N);
+  const adj = Array.from({ length: N }, () => []);
+
+  function stampR(n1, n2, R, isActiveEdge = true) {
+    const g = 1 / R;
+    G[n1][n1] += g; G[n2][n2] += g;
+    G[n1][n2] -= g; G[n2][n1] -= g;
+    if (isActiveEdge) { adj[n1].push(n2); adj[n2].push(n1); }
+  }
+
+  wires.forEach(w => {
+    const n1 = idxOf(w.c1, w.s1), n2 = idxOf(w.c2, w.s2);
+    if (n1 >= 0 && n2 >= 0) stampR(n1, n2, 1e-5, true);
+  });
+
+  comps.forEach((c, ci) => {
+    const n1 = ci * 2, n2 = ci * 2 + 1;
+    if (c.type === 'wire_seg') stampR(n1, n2, 1e-5, true);
+    else if (c.type === 'battery') {
+      const Rint = 1e-4;
+      stampR(n1, n2, Rint, true);
+      const Ieq = c.v / Rint;
+      rhs[n1] -= Ieq; rhs[n2] += Ieq;
+    } else if (c.type === 'switch') {
+      if (c.closed) stampR(n1, n2, 1e-5, true);
+      else stampR(n1, n2, 1e9, false);
+    } else if (c.type === 'bulb') {
+      if (c.blown) stampR(n1, n2, 1e9, false);
+      else stampR(n1, n2, c.r, true);
+    } else if (c.type === 'resistor' || c.type === 'bell') {
+      stampR(n1, n2, c.r, true);
+    } else if (c.type === 'fuse') {
+      if (c.blown) stampR(n1, n2, 1e9, false);
+      else stampR(n1, n2, 1e-4, true);
+    } else if (c.type === 'ammeter') {
+      stampR(n1, n2, 1e-5, true);
+    } else if (c.type === 'voltmeter') {
+      stampR(n1, n2, 1e9, false);
+    }
+  });
+
+  const visited = new Uint8Array(N);
+  const domainOf = new Int32Array(N).fill(-1);
+  let domId = 0;
+
+  for (let start = 0; start < N; start++) {
+    if (visited[start]) continue;
+    domId++;
+    const compNodes = [];
+    const q = [start];
+    visited[start] = 1;
+    domainOf[start] = domId;
+    while (q.length) {
+      const u = q.shift();
+      compNodes.push(u);
+      for (const v of adj[u]) {
+        if (!visited[v]) { visited[v] = 1; domainOf[v] = domId; q.push(v); }
+      }
+    }
+    let gnd = compNodes[0];
+    for (const u of compNodes) {
+      const c = comps[u >> 1];
+      if (c.type === 'battery' && (u & 1) === 0) { gnd = u; break; }
+    }
+    for (let j = 0; j < N; j++) G[gnd][j] = 0;
+    G[gnd][gnd] = 1;
+    rhs[gnd] = 0;
+  }
+  for (let i = 0; i < N; i++) G[i][i] += 1e-12;
+
+  const V = solveLinearSystem(G, rhs);
+
+  S.shortCircuit = false;
+  S.ammeterShort = false;
+  let newlyBlownFuse = false, newlyBlownBulb = false;
+
+  comps.forEach((c, ci) => {
+    const v1 = V[ci * 2], v2 = V[ci * 2 + 1];
+    if (c.type === 'wire_seg') {
+      c.U = cleanZero(Math.abs(v1 - v2));
+      c.I = cleanZero((v1 - v2) / 1e-5);
+    } else if (c.type === 'battery') {
+      c.U = cleanZero(v2 - v1);
+      c.I = cleanZero((c.v - (v2 - v1)) / 1e-4);
+      if (Math.abs(c.I) > 25) S.shortCircuit = true;
+    } else if (c.type === 'switch') {
+      c.U = cleanZero(Math.abs(v1 - v2));
+      c.I = c.closed ? cleanZero((v1 - v2) / 1e-5) : 0;
+    } else if (c.type === 'bulb') {
+      c.U = cleanZero(Math.abs(v1 - v2));
+      c.I = c.blown ? 0 : cleanZero((v1 - v2) / c.r);
+      c.P = cleanZero(Math.abs(c.U * c.I));
+      if (!c.blown && c.U > 16.0) {
+        c.blown = true; c.I = 0; c.P = 0;
+        newlyBlownBulb = true; spawnBurst(c.x, c.y, '#fff'); sfxZap();
+      }
+    } else if (c.type === 'resistor' || c.type === 'bell') {
+      c.U = cleanZero(Math.abs(v1 - v2));
+      c.I = cleanZero((v1 - v2) / c.r);
+    } else if (c.type === 'fuse') {
+      c.U = cleanZero(Math.abs(v1 - v2));
+      c.I = c.blown ? 0 : cleanZero((v1 - v2) / 1e-4);
+      if (!c.blown && Math.abs(c.I) > 2.5) {
+        c.blown = true; c.I = 0;
+        newlyBlownFuse = true; spawnBurst(c.x, c.y, '#ffc93c'); sfxZap();
+      }
+    } else if (c.type === 'ammeter') {
+      c.U = cleanZero(Math.abs(v1 - v2));
+      c.I = cleanZero(Math.abs(v1 - v2) / 1e-5);
+      if (c.I > 25) { S.ammeterShort = true; S.shortCircuit = true; }
+    } else if (c.type === 'voltmeter') {
+      const nBlack = findProbeNode(c.p0, idxOf);
+      const nRed   = findProbeNode(c.p1, idxOf);
+      if (nBlack >= 0 && nRed >= 0 && domainOf[nBlack] === domainOf[nRed]) {
+        c.connected = true;
+        c.U = cleanZero(V[nRed] - V[nBlack]);
+      } else {
+        c.connected = false; c.U = 0;
+      }
+      c.I = 0;
+    }
+  });
+
+  if (newlyBlownFuse || newlyBlownBulb) {
+    solveCircuit(false);
+    if (!S.docMysteryActive) {
+      if (newlyBlownFuse) say('⚡ <b>TÁCH! Cầu chì đã tự đứt dây chì!</b> Do dòng điện vượt quá 2,5 A, cầu chì tự ngắt mạch để bảo vệ nguồn điện!', 'warn');
+      else if (newlyBlownBulb) say('💥 <b>BỤP! Bóng đèn bị cháy đứt dây tóc rồi!</b> Hiệu điện thế vượt quá 16 V. Hãy giảm số Vôn của nguồn và bấm <b>"Sửa mới"</b> nhé!', 'warn');
+    }
+    updateInspector();
+    return;
+  }
+
+  wires.forEach(w => {
+    const n1 = idxOf(w.c1, w.s1), n2 = idxOf(w.c2, w.s2);
+    w.I = (n1 >= 0 && n2 >= 0) ? cleanZero((V[n1] - V[n2]) / 1e-5) : 0;
+  });
+
+  if (triggerFeedback) diagnoseAndSpeak();
+  updateHUD();
+  updateInspector();
+}
+
+let lastSay = 0;
+function say(txt, mood = '') {
+  const b = $('bubble');
+  b.innerHTML = txt;
+  b.className = 'robo-bubble ' + mood;
+  const m = $('roboMouth'), a = $('roboAnt');
+  if (mood === 'warn') { m.setAttribute('d', 'M26 59 Q39 50 52 59'); a.setAttribute('fill', '#ff2e2e'); }
+  else if (mood === 'ok') { m.setAttribute('d', 'M24 52 Q39 66 54 52'); a.setAttribute('fill', '#1fb59a'); }
+  else { m.setAttribute('d', 'M26 54 Q39 62 52 54'); a.setAttribute('fill', '#ffc93c'); }
+  const r = $('robot');
+  r.classList.remove('bounce'); void r.getBoundingClientRect(); r.classList.add('bounce');
+  lastSay = Date.now();
+}
+function sayThrottled(txt, mood = '', ms = 2200) {
+  if (Date.now() - lastSay > ms) say(txt, mood);
+}
+
+function diagnoseAndSpeak() {
+  if (S.docMysteryActive) {
+    const anyLit = comps.some(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.1) && !S.shortCircuit;
+    if (anyLit) say('✨ <b>Đèn sáng lên rồi!</b> Hãy bấm nút <b>"✅ Kiểm tra"</b> ở bảng bên phải để hoàn thành ca bệnh nhé!', 'ok');
+    else if (S.shortCircuit) {
+      sfxZap();
+      if (unlockedHints === 0) sayThrottled('🩺 Mạch điện vẫn đang có sự cố! Hãy quan sát đường đi của dòng điện hoặc bấm nút <b>💡 Mở Gợi ý 1</b> nhé!', 'warn', 1800);
+    }
+    return;
+  }
+  if (S.ammeterShort) {
+    sfxZap();
+    say('🚨 <b>NGUY HIỂM! Em đang mắc Ampe kế SONG SONG!</b> Ampe kế có R<sub>A</sub> ≈ 0 Ω nên dòng điện cực lớn lao qua gây <b>ĐOẢN MẠCH</b>! Hãy mắc <b>NỐI TIẾP</b> nhé!', 'warn');
+    return;
+  }
+  if (S.shortCircuit) {
+    sfxZap();
+    say('🔥 <b>CHẬP ĐIỆN (ĐOẢN MẠCH)!</b> Dòng điện đang đi tắt từ cực Dương (+) về cực Âm (-) mà không qua bóng đèn hay điện trở!', 'warn');
+    return;
+  }
+  const litBulbs = comps.filter(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+  if (litBulbs.length === 1) {
+    const b = litBulbs[0];
+    sayThrottled(`✨ Đèn sáng tốt! Cường độ dòng điện là <b>I = ${fmt(Math.abs(b.I), 2)} A</b> và hiệu điện thế hai đầu đèn là <b>U = ${fmt(b.U, 2)} V</b>.`, 'ok', 1600);
+  }
+}
+
+function updateHUD() {
+  const pill = $('statPill');
+  const cutTxt = S.cutMode ? `<b style="color:#ff6b57">[✂️ Đang bật Cắt dây]</b> · ` : '';
+  const countTxt = `${comps.length} thiết bị · ${wires.length} dây nối`;
+  if (S.docMysteryActive) {
+    const anyLit = comps.some(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.1) && !S.shortCircuit;
+    pill.innerHTML = cutTxt + (anyLit
+      ? `<b style="color:#4cf08a">🩺 Đèn đã sáng! Hãy bấm "✅ Kiểm tra"</b> · ${countTxt}`
+      : `<b style="color:#ffc93c">🩺 Bác sĩ Mạch: Hãy tìm lỗi và sửa!</b> · ${countTxt}`);
+    return;
+  }
+  if (S.ammeterShort) pill.innerHTML = cutTxt + `<b style="color:#ff6b57">🚨 ĐOẢN MẠCH QUA AMPE KẾ!</b> · ${countTxt}`;
+  else if (S.shortCircuit) pill.innerHTML = cutTxt + `<b style="color:#ff6b57">🔥 ĐANG ĐOẢN MẠCH NGUỒN!</b> · ${countTxt}`;
+  else {
+    const active = comps.some(c => (c.type === 'bulb' || c.type === 'resistor' || c.type === 'bell') && Math.abs(c.I) > 0.02);
+    pill.innerHTML = cutTxt + (active
+      ? `<b style="color:#4cf08a">⚡ Mạch kín – Có dòng điện</b> · ${countTxt}`
+      : `<b>Mạch hở / Chưa có dòng điện</b> · ${countTxt}`);
+  }
+}
+
+function addComp(type) {
+  sfxClick(600);
+  const offset = (comps.length % 5) * 26 - 40;
+  const c = makeComp(type, W * 0.46 + offset, H * 0.5 + offset * 0.5);
+  S.selectedId = c.id;
+  solveCircuit(false);
+}
+
+function updateInspector() {
+  const bar = $('insp');
+  const c = comps.find(x => x.id === S.selectedId);
+  if (!c) { bar.classList.remove('open'); return; }
+  bar.classList.add('open');
+  const meta = COMP_META[c.type];
+  const dispU = fmt(Math.abs(c.U), 2), dispI = fmt(Math.abs(c.I), 2);
+  let ctrlHTML = '';
+
+  if (c.type === 'battery') {
+    ctrlHTML = `
+      <div class="insp-ctrl">
+        <label>Hiệu điện thế (U):</label>
+        <input id="rngVal" type="range" min="0.5" max="24" step="0.5" value="${c.v}" oninput="setCompVal(${c.id},'v',this.value,'rng')">
+        <div class="num-input-wrap">
+          <input id="numVal" type="number" min="0.5" max="50" step="0.1" value="${c.v}" oninput="setCompVal(${c.id},'v',this.value,'num')">
+          <b>V</b>
+        </div>
+      </div>`;
+  } else if (c.type === 'bulb' || c.type === 'resistor' || c.type === 'bell') {
+    ctrlHTML = `
+      <div class="insp-ctrl">
+        <label>Điện trở (R):</label>
+        <input id="rngVal" type="range" min="1" max="100" step="0.5" value="${c.r}" oninput="setCompVal(${c.id},'r',this.value,'rng')">
+        <div class="num-input-wrap">
+          <input id="numVal" type="number" min="0.5" max="500" step="0.1" value="${c.r}" oninput="setCompVal(${c.id},'r',this.value,'num')">
+          <b>Ω</b>
+        </div>
+      </div>`;
+  } else if (c.type === 'switch') {
+    ctrlHTML = `<button class="btn ${c.closed ? 'success' : 'accent'}" onclick="toggleSwitch(${c.id})">${c.closed ? '🔓 Mở Công tắc (K)' : '🔒 Đóng Công tắc (K)'}</button>`;
+  } else if (c.type === 'ammeter') {
+    const txtI = c.I > 25 ? 'NGẮN MẠCH!' : `${fmt(c.I, 2)} A`;
+    ctrlHTML = `<div style="font-size:.78rem">Số chỉ: <b style="color:var(--blue)">I = ${txtI}</b> <small style="color:var(--muted)">(R<sub>A</sub> ≈ 0 Ω)</small></div>`;
+  } else if (c.type === 'voltmeter') {
+    const txtU = c.connected ? `${fmt(c.U, 2)} V` : '— (Chưa chạm đủ 2 que đo)';
+    ctrlHTML = `<div style="font-size:.78rem">Số chỉ: <b style="color:var(--blue)">${txtU}</b></div>`;
+  } else if (c.type === 'fuse') {
+    ctrlHTML = `<div style="font-size:.78rem">Dòng qua cầu chì: <b>${dispI} A</b> / Giới hạn: <b style="color:var(--danger)">2.50 A</b></div>`;
+  }
+
+  const repairBtn = c.blown ? `<button class="btn success" onclick="repairComp(${c.id})">🛠️ Sửa mới</button>` : '';
+  const rotBtn = c.type === 'voltmeter'
+    ? `<button class="btn" onclick="resetProbes(${c.id})">📍 Thu gọn que đo</button>`
+    : `<button class="btn" onclick="rotateComp(${c.id})">🔄 Xoay 90°</button>`;
+  const subTxt = c.type === 'voltmeter'
+    ? (c.connected ? `Đo được: ${fmt(c.U, 2)} V` : 'Kéo 2 kim để đo')
+    : `U = ${dispU} V · I = ${dispI} A`;
+
+  bar.innerHTML = `
+    <div class="insp-head"><strong>${meta.name}</strong><span id="inspSub">${subTxt}</span></div>
+    ${ctrlHTML}
+    <div style="display:flex;gap:6px">${repairBtn}${rotBtn}<button class="btn danger" onclick="deleteComp(${c.id})">🗑 Xóa</button></div>`;
+}
+
+window.resetProbes = id => {
+  const c = comps.find(x => x.id === id);
+  if (!c) return;
+  c.p0 = { x: c.x - 52, y: c.y + 68 }; c.p1 = { x: c.x + 52, y: c.y + 68 };
+  solveCircuit(false);
+};
+window.setCompVal = (id, key, rawVal, src) => {
+  const c = comps.find(x => x.id === id);
+  if (!c) return;
+  let val = parseFloat(rawVal);
+  if (isNaN(val) || val <= 0) return;
+  val = Math.max(0.1, Math.min(500, val));
+  c[key] = val;
+  const rng = $('rngVal'), num = $('numVal');
+  if (src === 'rng' && num) num.value = val;
+  if (src === 'num' && rng) rng.value = val;
+  solveCircuit(false);
+  const sub = $('inspSub');
+  if (sub) sub.textContent = `U = ${fmt(Math.abs(c.U), 2)} V · I = ${fmt(Math.abs(c.I), 2)} A`;
+};
+window.toggleSwitch = id => {
+  const c = comps.find(x => x.id === id);
+  if (!c) return;
+  c.closed = !c.closed;
+  sfxClick(c.closed ? 750 : 420);
+  solveCircuit(true);
+};
+window.repairComp = id => {
+  const c = comps.find(x => x.id === id);
+  if (!c) return;
+  c.blown = false; sfxClick(820); solveCircuit(true);
+};
+window.rotateComp = id => {
+  const c = comps.find(x => x.id === id);
+  if (!c || c.type === 'voltmeter') return;
+  c.rot = c.rot ? 0 : 1; sfxClick(500); solveCircuit(false);
+};
+window.deleteComp = id => {
+  comps = comps.filter(x => x.id !== id);
+  wires = wires.filter(w => w.c1 !== id && w.c2 !== id);
+  if (S.selectedId === id) S.selectedId = null;
+  sfxClick(320); solveCircuit(false);
+};
+
+/* ==================== 5. VẼ CANVAS BÀN MẠCH 2D ==================== */
+const cv = $('cv'), g = cv.getContext('2d');
+let W = window.innerWidth, H = window.innerHeight;
+
+function resize2D() {
+  const d = window.devicePixelRatio || 1;
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W * d; cv.height = H * d;
+  g.setTransform(d, 0, 0, d, 0, 0);
+  renderer.setSize(W, H);
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize2D);
+
+function spawnBurst(x, y, color = '#ffc93c') {
+  for (let i = 0; i < 24; i++) {
+    const ang = Math.random() * Math.PI * 2, spd = 1.5 + Math.random() * 4.5;
+    sparks.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 1, life: 1, col: color });
+  }
+}
+
+const RES_COLS = ['#111','#795548','#f44336','#ff9800','#ffeb3b','#4caf50','#2196f3','#9c27b0','#9e9e9e','#fff'];
+function getResistorBands(val) {
+  const v = Math.max(1, Math.min(99, Math.round(val)));
+  return [RES_COLS[Math.floor(v / 10)], RES_COLS[v % 10], RES_COLS[0], '#d4af37'];
+}
+
+function drawGrid() {
+  g.fillStyle = S.view === 'schem' ? '#0f1e3d' : '#0b1528';
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(148, 163, 184, 0.14)';
+  const step = 30;
+  for (let x = step; x < W; x += step) {
+    for (let y = step; y < H; y += step) g.fillRect(x - 1, y - 1, 2, 2);
+  }
+}
+
+function drawParticlesOnSegment(p1, p2, currentI, objWithPhase, dt) {
+  if (S.flow === 'none') return;
+  const absI = Math.abs(currentI);
+  const len = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+  const count = Math.max(2, Math.floor(len / 26));
+  const dir = S.flow === 'elec' ? -Math.sign(currentI) : Math.sign(currentI);
+  const speed = absI > 0.01 ? Math.min(8, Math.pow(absI, 0.65) * 1.6) : 0;
+  objWithPhase.phase = (objWithPhase.phase + dir * speed * (dt / 1000) * 1.4 + 10) % 1;
+
+  const ux = (p2.x - p1.x) / (len || 1), uy = (p2.y - p1.y) / (len || 1);
+  for (let i = 0; i < count; i++) {
+    const t = ((i + objWithPhase.phase) / count) % 1;
+    const px = p1.x + (p2.x - p1.x) * t, py = p1.y + (p2.y - p1.y) * t;
+    if (S.flow === 'elec') {
+      g.beginPath(); g.arc(px, py, 4.2, 0, Math.PI * 2);
+      g.fillStyle = '#38bdf8'; g.fill();
+      g.strokeStyle = '#0b1528'; g.lineWidth = 1; g.stroke();
+      g.fillStyle = '#0b1528'; g.fillRect(px - 2.2, py - 0.6, 4.4, 1.2);
+    } else if (absI > 0.01) {
+      const ang = Math.atan2(uy * dir, ux * dir);
+      g.save(); g.translate(px, py); g.rotate(ang);
+      g.fillStyle = '#ffc93c';
+      g.beginPath(); g.moveTo(5, 0); g.lineTo(-4, -4); g.lineTo(-4, 4); g.closePath(); g.fill();
+      g.restore();
+    }
+  }
+}
+
+function drawWires(dt) {
+  wires.forEach(w => {
+    const c1 = comps.find(c => c.id === w.c1), c2 = comps.find(c => c.id === w.c2);
+    if (!c1 || !c2) return;
+    const p1 = getTermPos(c1, w.s1), p2 = getTermPos(c2, w.s2);
+    const isHot = Math.abs(w.I) > 20;
+    g.save();
+    g.beginPath(); g.moveTo(p1.x, p1.y); g.lineTo(p2.x, p2.y); g.lineCap = 'round';
+    if (S.view === 'schem') {
+      g.strokeStyle = isHot ? '#ff5252' : '#ffffff'; g.lineWidth = 3.2; g.stroke();
+    } else {
+      g.strokeStyle = '#4a1c0d'; g.lineWidth = 9; g.stroke();
+      g.strokeStyle = isHot ? '#ff4733' : '#d96b43'; g.lineWidth = 5.8; g.stroke();
+    }
+    drawParticlesOnSegment(p1, p2, w.I, w, dt);
+    g.restore();
+  });
+}
+
+function drawPhETVoltmeter(c) {
+  g.save();
+  if (S.selectedId === c.id) {
+    g.strokeStyle = '#ffc93c'; g.lineWidth = 2; g.setLineDash([5, 4]);
+    g.strokeRect(c.x - 46, c.y - 48, 92, 96); g.setLineDash([]);
+  }
+  const sockBlack = { x: c.x - 7, y: c.y + 33 }, sockRed = { x: c.x + 7, y: c.y + 33 };
+  const angBlack = 0.34, angRed = -0.34, handleLen = 58;
+  const tailBlack = { x: c.p0.x - Math.sin(angBlack) * handleLen, y: c.p0.y + Math.cos(angBlack) * handleLen };
+  const tailRed   = { x: c.p1.x - Math.sin(angRed) * handleLen,   y: c.p1.y + Math.cos(angRed) * handleLen };
+
+  g.lineCap = 'round'; g.lineWidth = 3.5;
+  g.strokeStyle = '#111827';
+  g.beginPath(); g.moveTo(sockBlack.x, sockBlack.y);
+  g.bezierCurveTo(sockBlack.x - 25, sockBlack.y + 45, tailBlack.x - 10, tailBlack.y + 30, tailBlack.x, tailBlack.y); g.stroke();
+
+  g.strokeStyle = '#ff1e00';
+  g.beginPath(); g.moveTo(sockRed.x, sockRed.y);
+  g.bezierCurveTo(sockRed.x + 25, sockRed.y + 45, tailRed.x + 10, tailRed.y + 30, tailRed.x, tailRed.y); g.stroke();
+
+  g.save(); g.translate(c.x, c.y);
+  g.fillStyle = '#1e1e1e'; g.strokeStyle = '#000'; g.lineWidth = 2;
+  g.beginPath(); g.roundRect(-38, -44, 76, 86, 22); g.fill(); g.stroke();
+
+  g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 3.5;
+  g.beginPath(); g.arc(-18, -24, 15, Math.PI * 1.05, Math.PI * 1.48); g.stroke();
+
+  g.fillStyle = '#f59e2d';
+  g.beginPath(); g.roundRect(-30, -33, 60, 56, 15); g.fill();
+
+  g.fillStyle = '#000'; g.font = '700 13px Be Vietnam Pro, sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Hiệu thế', 0, -17);
+
+  g.fillStyle = '#ffffff'; g.strokeStyle = '#111'; g.lineWidth = 1.6;
+  g.beginPath(); g.roundRect(-24, -6, 48, 22, 5); g.fill(); g.stroke();
+
+  g.fillStyle = '#111'; g.font = '800 11.5px Be Vietnam Pro, monospace';
+  g.fillText(c.connected ? `${fmt(c.U, 2)} V` : '—', 0, 5.5);
+
+  g.fillStyle = '#f59e2d'; g.beginPath(); g.ellipse(0, 33, 14, 7, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#000'; g.beginPath(); g.arc(-6.5, 33, 4, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#ff3b00'; g.beginPath(); g.arc(6.5, 33, 4, 0, Math.PI * 2); g.fill();
+  g.restore();
+
+  function drawProbe(tipPos, angle, isRed) {
+    g.save(); g.translate(tipPos.x, tipPos.y); g.rotate(angle);
+    const idxOf = (cId, side) => { const ci = comps.findIndex(x => x.id === cId); return ci >= 0 ? ci * 2 + side : -1; };
+    if (findProbeNode(tipPos, idxOf) >= 0) {
+      g.fillStyle = 'rgba(76, 240, 138, 0.38)';
+      g.beginPath(); g.arc(0, 0, 9, 0, Math.PI * 2); g.fill();
+    }
+    const gTip = g.createLinearGradient(-3, 0, 3, 0);
+    gTip.addColorStop(0, '#e2e8f0'); gTip.addColorStop(0.5, '#94a3b8'); gTip.addColorStop(1, '#475569');
+    g.fillStyle = gTip;
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(-2.5, 16); g.lineTo(2.5, 16); g.closePath(); g.fill();
+
+    const gBody = g.createLinearGradient(-6, 0, 6, 0);
+    gBody.addColorStop(0, isRed ? '#ff764d' : '#4b5563');
+    gBody.addColorStop(0.45, isRed ? '#c83e1b' : '#111827');
+    gBody.addColorStop(1, isRed ? '#7c1d05' : '#000000');
+    g.fillStyle = gBody;
+    g.fillRect(-3.5, 16, 7, 4);
+    g.beginPath(); g.roundRect(-7.5, 20, 15, 3.5, 1.5); g.fill();
+    g.beginPath(); g.moveTo(-4.8, 23.5); g.lineTo(4.8, 23.5); g.lineTo(3.8, 58); g.lineTo(-3.8, 58); g.closePath(); g.fill();
+
+    g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = 1.3;
+    for (let ry = 27; ry <= 39; ry += 3) { g.beginPath(); g.moveTo(-4.3, ry); g.lineTo(4.3, ry); g.stroke(); }
+    g.restore();
+  }
+  drawProbe(c.p0, angBlack, false);
+  drawProbe(c.p1, angRed, true);
+  g.restore();
+}
+
+function drawComp(c, time, dt) {
+  if (c.type === 'voltmeter') { drawPhETVoltmeter(c); return; }
+  g.save(); g.translate(c.x, c.y);
+  if (c.rot === 1) g.rotate(Math.PI / 2);
+
+  if (S.selectedId === c.id) {
+    g.strokeStyle = '#ffc93c'; g.lineWidth = 2; g.setLineDash([5, 4]);
+    g.strokeRect(-54, -36, 108, 72); g.setLineDash([]);
+  }
+  if (c.type !== 'wire_seg') {
+    g.strokeStyle = S.view === 'schem' ? '#fff' : '#94a3b8'; g.lineWidth = 3.5;
+    g.beginPath(); g.moveTo(-46, 0); g.lineTo(-28, 0); g.moveTo(28, 0); g.lineTo(46, 0); g.stroke();
+  }
+  if (S.view === 'schem') drawCompSchem(c);
+  else drawCompReal(c, time);
+
+  if (c.type === 'wire_seg') drawParticlesOnSegment({ x: -42, y: 0 }, { x: 42, y: 0 }, c.I, c, dt);
+
+  [-46, 46].forEach((tx, sIdx) => {
+    const col = c.type === 'battery' ? (sIdx === 1 ? '#ff5252' : '#38bdf8') : '#ffc93c';
+    g.beginPath(); g.arc(tx, 0, 7.5, 0, Math.PI * 2);
+    g.fillStyle = col; g.fill(); g.lineWidth = 2; g.strokeStyle = '#fff'; g.stroke();
+  });
+  g.restore();
+
+  if ((c.type === 'battery' && Math.abs(c.I) > 25) || (c.type === 'ammeter' && Math.abs(c.I) > 25)) {
+    drawFire(c.x, c.y - 12, time);
+    if (Math.random() < 0.35) spawnBurst(c.x + (Math.random() - 0.5) * 30, c.y, '#ff6b57');
+  }
+  if (c.type === 'bell' && Math.abs(c.I) > 0.08) sfxBell();
+}
+
+function drawCompReal(c, time) {
+  if (c.type === 'wire_seg') {
+    const isHot = Math.abs(c.I) > 20;
+    const grad = g.createLinearGradient(0, -6, 0, 6);
+    grad.addColorStop(0, isHot ? '#ff9f80' : '#f3a683');
+    grad.addColorStop(0.5, isHot ? '#ff3300' : '#c4512d');
+    grad.addColorStop(1, '#5a1e0c');
+    g.fillStyle = grad; g.beginPath(); g.roundRect(-46, -5.5, 92, 11, 5); g.fill();
+  } else if (c.type === 'battery') {
+    const gB = g.createLinearGradient(0, -16, 0, 16);
+    gB.addColorStop(0, '#64748b'); gB.addColorStop(0.45, '#1e293b'); gB.addColorStop(1, '#090d16');
+    g.fillStyle = gB; g.fillRect(-32, -16, 42, 32);
+    const gC = g.createLinearGradient(0, -16, 0, 16);
+    gC.addColorStop(0, '#fde68a'); gC.addColorStop(0.5, '#f59e0b'); gC.addColorStop(1, '#b45309');
+    g.fillStyle = gC; g.fillRect(10, -16, 20, 32);
+    g.fillStyle = '#cbd5e1'; g.fillRect(30, -7, 5, 14);
+    g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.strokeRect(-32, -16, 62, 32);
+    g.fillStyle = '#fff'; g.font = '800 11px Be Vietnam Pro'; g.textAlign = 'center';
+    g.fillText(`${c.v}V`, -9, 4); g.fillText('-', -24, -5);
+    g.fillStyle = '#1e293b'; g.fillText('+', 20, 4);
+  } else if (c.type === 'bulb') {
+    const P = c.blown ? 0 : Math.min(25, c.P);
+    if (P > 0.05) {
+      const rad = Math.min(80, 18 + Math.sqrt(P) * 14);
+      const grad = g.createRadialGradient(0, -14, 4, 0, -14, rad);
+      grad.addColorStop(0, 'rgba(255,245,157,0.95)');
+      grad.addColorStop(0.5, 'rgba(255,201,60,0.45)');
+      grad.addColorStop(1, 'rgba(255,201,60,0)');
+      g.fillStyle = grad; g.beginPath(); g.arc(0, -14, rad, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#ffe066'; g.lineWidth = 2;
+      const rays = 12, rayLen = Math.min(34, 6 + Math.sqrt(P) * 7);
+      for (let i = 0; i < rays; i++) {
+        const a = (i / rays) * Math.PI * 2;
+        g.beginPath(); g.moveTo(Math.cos(a) * 20, -14 + Math.sin(a) * 20);
+        g.lineTo(Math.cos(a) * (20 + rayLen), -14 + Math.sin(a) * (20 + rayLen)); g.stroke();
+      }
+    }
+    g.fillStyle = '#94a3b8'; g.fillRect(-11, 2, 22, 14);
+    g.beginPath(); g.arc(0, -14, 18, 0, Math.PI * 2);
+    g.fillStyle = c.blown ? 'rgba(51,65,85,0.85)' : P > 0.05 ? 'rgba(255,249,196,0.9)' : 'rgba(226,232,240,0.38)';
+    g.fill(); g.lineWidth = 2; g.strokeStyle = '#cbd5e1'; g.stroke();
+    g.strokeStyle = c.blown ? '#ef4444' : P > 0.05 ? '#ffffff' : '#d9534f';
+    g.lineWidth = P > 0.05 ? 2.5 : 1.8; g.beginPath();
+    if (c.blown) { g.moveTo(-7, 2); g.lineTo(-4, -14); g.moveTo(7, 2); g.lineTo(4, -12); }
+    else { g.moveTo(-7, 2); g.lineTo(-5, -17); g.lineTo(5, -17); g.lineTo(7, 2); }
+    g.stroke();
+    g.fillStyle = '#fff'; g.font = '700 9.5px Be Vietnam Pro'; g.textAlign = 'center'; g.fillText(`${c.r}Ω`, 0, 27);
+  } else if (c.type === 'switch') {
+    g.fillStyle = '#c4512d';
+    g.beginPath(); g.roundRect(-30, -4, 14, 8, 3); g.fill();
+    g.beginPath(); g.roundRect(16, -4, 14, 8, 3); g.fill();
+    g.strokeStyle = '#e07a5f'; g.lineWidth = 6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-20, 0);
+    if (c.closed) g.lineTo(20, 0); else g.lineTo(14, -22);
+    g.stroke();
+    g.fillStyle = '#cbd5e1'; g.strokeStyle = '#1e293b'; g.lineWidth = 2;
+    g.beginPath(); g.arc(-20, 0, 5.5, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.beginPath(); g.arc(20, 0, 4.5, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#fff'; g.font = '700 10px Be Vietnam Pro'; g.textAlign = 'center';
+    g.fillText(c.closed ? 'K (Đóng)' : 'K (Mở)', 0, 22);
+  } else if (c.type === 'resistor') {
+    const gR = g.createLinearGradient(0, -11, 0, 11);
+    gR.addColorStop(0, '#fff3d6'); gR.addColorStop(0.55, '#e6c28b'); gR.addColorStop(1, '#b58950');
+    g.fillStyle = gR; g.beginPath(); g.roundRect(-28, -11, 56, 22, 8); g.fill();
+    const bands = getResistorBands(c.r);
+    [-16, -6, 4, 16].forEach((bx, i) => { g.fillStyle = bands[i]; g.fillRect(bx, -10, 5, 20); });
+    g.fillStyle = '#fff'; g.font = '700 10px Be Vietnam Pro'; g.textAlign = 'center'; g.fillText(`${c.r} Ω`, 0, -15);
+  } else if (c.type === 'ammeter') {
+    g.fillStyle = '#f8fafc'; g.beginPath(); g.roundRect(-34, -24, 68, 48, 11); g.fill();
+    g.lineWidth = 3; g.strokeStyle = '#475569'; g.stroke();
+    g.fillStyle = '#1e293b'; g.font = '800 11px Be Vietnam Pro'; g.textAlign = 'center'; g.fillText('Cường độ', 0, -10);
+    const valI = cleanZero(c.I);
+    g.fillStyle = '#0f172a'; g.beginPath(); g.roundRect(-29, -3, 58, 19, 4); g.fill();
+    g.fillStyle = valI > 25 ? '#ff5252' : '#4cf08a'; g.font = '700 10.5px monospace';
+    g.fillText(valI > 25 ? 'NGẮN MẠCH!' : `${fmt(valI, 2)} A`, 0, 9.5);
+  } else if (c.type === 'fuse') {
+    g.fillStyle = 'rgba(226,232,240,0.25)'; g.fillRect(-26, -10, 52, 20);
+    g.strokeStyle = '#94a3b8'; g.lineWidth = 1.5; g.strokeRect(-26, -10, 52, 20);
+    g.fillStyle = '#cbd5e1'; g.fillRect(-28, -11, 8, 22); g.fillRect(20, -11, 8, 22);
+    g.strokeStyle = c.blown ? '#ef4444' : '#fbbf24'; g.lineWidth = 2.2; g.beginPath();
+    if (c.blown) { g.moveTo(-20, 0); g.lineTo(-6, -4); g.moveTo(20, 0); g.lineTo(6, 4); }
+    else { g.moveTo(-20, 0); g.bezierCurveTo(-8, -7, 8, 7, 20, 0); }
+    g.stroke();
+    g.fillStyle = '#fff'; g.font = '700 9.5px Be Vietnam Pro'; g.textAlign = 'center';
+    g.fillText(c.blown ? 'Đứt (>2.5A)' : 'Cầu chì 2.5A', 0, -14);
+  } else if (c.type === 'bell') {
+    const ringing = Math.abs(c.I) > 0.08;
+    const shake = ringing ? Math.sin(time * 0.08) * 2.5 : 0;
+    g.save(); g.translate(shake, 0);
+    g.beginPath(); g.arc(0, -4, 18, Math.PI, 0); g.closePath();
+    g.fillStyle = '#ef4444'; g.fill(); g.lineWidth = 2; g.strokeStyle = '#fee2e2'; g.stroke();
+    g.fillStyle = '#fbbf24'; g.beginPath(); g.arc(20, -6, 4.5, 0, Math.PI * 2); g.fill();
+    g.restore();
+    g.fillStyle = '#fff'; g.font = '700 10px Be Vietnam Pro'; g.textAlign = 'center'; g.fillText('Chuông', 0, 14);
+  }
+}
+
+function drawCompSchem(c) {
+  g.strokeStyle = '#fff'; g.fillStyle = '#0f1e3d'; g.lineWidth = 2.8;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (c.type === 'wire_seg') { g.beginPath(); g.moveTo(-46, 0); g.lineTo(46, 0); g.stroke(); }
+  else if (c.type === 'battery') {
+    g.fillRect(-10, -20, 20, 40);
+    g.beginPath(); g.moveTo(-28, 0); g.lineTo(-7, 0); g.moveTo(7, 0); g.lineTo(28, 0); g.stroke();
+    g.lineWidth = 5; g.beginPath(); g.moveTo(-7, -11); g.lineTo(-7, 11); g.stroke();
+    g.lineWidth = 2.5; g.beginPath(); g.moveTo(7, -20); g.lineTo(7, 20); g.stroke();
+    g.fillStyle = '#ffc93c'; g.font = '800 13px Be Vietnam Pro'; g.fillText('-', -16, -15); g.fillText('+', 16, -15);
+  } else if (c.type === 'bulb') {
+    g.beginPath(); g.arc(0, 0, 18, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(-12.5, -12.5); g.lineTo(12.5, 12.5); g.moveTo(12.5, -12.5); g.lineTo(-12.5, 12.5); g.stroke();
+  } else if (c.type === 'switch') {
+    g.fillRect(-18, -14, 36, 28);
+    g.beginPath(); g.moveTo(-16, 0); g.lineTo(c.closed ? 16 : 13, c.closed ? 0 : -16); g.stroke();
+  } else if (c.type === 'resistor') {
+    g.fillRect(-22, -10, 44, 20); g.strokeRect(-22, -10, 44, 20);
+    g.fillStyle = '#fff'; g.font = '700 10.5px Be Vietnam Pro'; g.fillText(`R=${c.r}Ω`, 0, 0);
+  } else if (c.type === 'ammeter') {
+    g.beginPath(); g.arc(0, 0, 19, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#ff9f43'; g.font = '800 16px Be Vietnam Pro'; g.fillText('A', 0, 1);
+  } else if (c.type === 'fuse') {
+    g.fillRect(-20, -9, 40, 18); g.strokeRect(-20, -9, 40, 18);
+    if (!c.blown) { g.beginPath(); g.moveTo(-20, 0); g.lineTo(20, 0); g.stroke(); }
+  } else if (c.type === 'bell') {
+    g.beginPath(); g.arc(0, 4, 16, Math.PI, 0); g.closePath(); g.fill(); g.stroke();
+  }
+}
+
+function drawFire(x, y, time) {
+  g.save(); g.translate(x, y);
+  for (let i = 0; i < 3; i++) {
+    const s = 1 + Math.sin(time * 0.02 + i * 2) * 0.22;
+    g.fillStyle = i === 0 ? '#ef4444' : i === 1 ? '#f97316' : '#facc15';
+    g.beginPath(); g.moveTo(-14 / (i + 1), 10);
+    g.quadraticCurveTo(-16 * s, -15 * s, 0, (-34 + i * 8) * s);
+    g.quadraticCurveTo(16 * s, -15 * s, 14 / (i + 1), 10); g.closePath(); g.fill();
+  }
+  g.restore();
+}
+
+/* ==================== 6. TƯƠNG TÁC KÉO THẢ TRÊN BÀN MẠCH 2D ==================== */
+let dragComp = null, dragOff = { x: 0, y: 0 }, dragProbe = null, wireStart = null, mousePos = { x: 0, y: 0 };
+
+function getCanvasPt(ev) {
+  const r = cv.getBoundingClientRect();
+  return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+}
+function findTerminalAt(p, radius = 16) {
+  for (const c of comps) {
+    if (c.type === 'voltmeter') continue;
+    for (let s = 0; s <= 1; s++) {
+      const tp = getTermPos(c, s);
+      if (Math.hypot(p.x - tp.x, p.y - tp.y) <= radius) return { cId: c.id, side: s, x: tp.x, y: tp.y };
+    }
+  }
+  return null;
+}
+function findVoltmeterProbeAt(p) {
+  for (let i = comps.length - 1; i >= 0; i--) {
+    const c = comps[i];
+    if (c.type !== 'voltmeter') continue;
+    const centerBlack = { x: c.p0.x - 9, y: c.p0.y + 26 }, centerRed = { x: c.p1.x + 9, y: c.p1.y + 26 };
+    if (Math.hypot(p.x - c.p0.x, p.y - c.p0.y) < 22 || Math.hypot(p.x - centerBlack.x, p.y - centerBlack.y) < 24)
+      return { comp: c, which: 'p0', offX: p.x - c.p0.x, offY: p.y - c.p0.y };
+    if (Math.hypot(p.x - c.p1.x, p.y - c.p1.y) < 22 || Math.hypot(p.x - centerRed.x, p.y - centerRed.y) < 24)
+      return { comp: c, which: 'p1', offX: p.x - c.p1.x, offY: p.y - c.p1.y };
+  }
+  return null;
+}
+
+cv.addEventListener('pointerdown', ev => {
+  cv.setPointerCapture(ev.pointerId);
+  const p = getCanvasPt(ev); mousePos = p;
+  if (S.cutMode) {
+    const idx = wires.findIndex(w => {
+      const c1 = comps.find(c => c.id === w.c1), c2 = comps.find(c => c.id === w.c2);
+      return c1 && c2 && distToSegment(p, getTermPos(c1, w.s1), getTermPos(c2, w.s2)) < 12;
+    });
+    if (idx >= 0) { wires.splice(idx, 1); sfxClick(300); solveCircuit(true); return; }
+  }
+  const prb = findVoltmeterProbeAt(p);
+  if (prb) { S.selectedId = prb.comp.id; dragProbe = prb; updateInspector(); return; }
+  const term = findTerminalAt(p, 16);
+  if (term) { wireStart = term; return; }
+  for (let i = comps.length - 1; i >= 0; i--) {
+    const c = comps[i];
+    if (Math.abs(p.x - c.x) < 42 && Math.abs(p.y - c.y) < 40) {
+      S.selectedId = c.id; dragComp = c; dragOff = { x: p.x - c.x, y: p.y - c.y }; dragComp.moved = false;
+      updateInspector(); return;
+    }
+  }
+  S.selectedId = null; updateInspector();
+});
+
+cv.addEventListener('pointermove', ev => {
+  const p = getCanvasPt(ev); mousePos = p;
+  if (dragProbe) {
+    const c = dragProbe.comp;
+    let nx = Math.max(12, Math.min(W - 12, p.x - dragProbe.offX));
+    let ny = Math.max(12, Math.min(H - 12, p.y - dragProbe.offY));
+    const snapTerm = findTerminalAt({ x: nx, y: ny }, 18);
+    if (snapTerm) { nx = snapTerm.x; ny = snapTerm.y; }
+    c[dragProbe.which] = { x: nx, y: ny };
+    solveCircuit(false); return;
+  }
+  if (dragComp) {
+    const dx = p.x - dragOff.x - dragComp.x, dy = p.y - dragOff.y - dragComp.y;
+    if (Math.hypot(dx, dy) > 4) dragComp.moved = true;
+    const newX = Math.max(135, Math.min(W - 60, p.x - dragOff.x));
+    const newY = Math.max(80, Math.min(H - 60, p.y - dragOff.y));
+    const actualDx = newX - dragComp.x, actualDy = newY - dragComp.y;
+    dragComp.x = newX; dragComp.y = newY;
+    if (dragComp.type === 'voltmeter') {
+      const idxOf = (cId, side) => { const ci = comps.findIndex(x => x.id === cId); return ci >= 0 ? ci * 2 + side : -1; };
+      if (findProbeNode(dragComp.p0, idxOf) < 0) { dragComp.p0.x += actualDx; dragComp.p0.y += actualDy; }
+      if (findProbeNode(dragComp.p1, idxOf) < 0) { dragComp.p1.x += actualDx; dragComp.p1.y += actualDy; }
+    }
+    solveCircuit(false);
+  }
+});
+
+cv.addEventListener('pointerup', ev => {
+  const p = getCanvasPt(ev);
+  if (dragProbe) { sfxClick(640); solveCircuit(false); dragProbe = null; return; }
+  if (wireStart) {
+    const target = findTerminalAt(p, 22);
+    if (target && !(target.cId === wireStart.cId && target.side === wireStart.side))
+      addWire(wireStart.cId, wireStart.side, target.cId, target.side);
+    wireStart = null;
+  }
+  if (dragComp) {
+    if (!dragComp.moved && dragComp.type === 'switch') toggleSwitch(dragComp.id);
+    dragComp = null;
+  }
+});
+
+/* ==================== 7. MẠCH MẪU & CHẾ ĐỘ THỬ THÁCH ==================== */
+function loadPreset(idx) {
+  comps = []; wires = []; S.selectedId = null; S.docMysteryActive = false;
+  const cx = W * 0.45, cy = H * 0.50;
+  if (idx === 0) {
+    const bat = makeComp('battery', cx - 130, cy - 110, { v: 9 });
+    const sw  = makeComp('switch',  cx + 100, cy - 110, { closed: true });
+    const am  = makeComp('ammeter', cx - 130, cy + 95);
+    const blb = makeComp('bulb',    cx + 100, cy + 95, { r: 10 });
+    makeComp('voltmeter', cx + 260, cy - 15);
+    addWire(bat.id, 1, sw.id, 0); addWire(sw.id, 1, blb.id, 1);
+    addWire(bat.id, 0, am.id, 0); addWire(am.id, 1, blb.id, 0);
+    say('⚡ <b>Mạch Mẫu 1 (Mạch đơn):</b> Đèn đang sáng! Em hãy kéo 2 que đo Đen & Đỏ của đồng hồ Hiệu thế chạm vào 2 chốt bóng đèn để kiểm tra số Vôn nhé.');
+  } else if (idx === 1) {
+    const bat = makeComp('battery', cx - 115, cy - 110, { v: 12 });
+    const sw  = makeComp('switch',  cx + 115, cy - 110, { closed: true });
+    const b1  = makeComp('bulb',    cx - 115, cy + 95, { r: 10 });
+    const b2  = makeComp('bulb',    cx + 115, cy + 95, { r: 10 });
+    makeComp('voltmeter', cx + 270, cy - 15);
+    addWire(bat.id, 1, sw.id, 0); addWire(sw.id, 1, b2.id, 1);
+    addWire(b2.id, 0, b1.id, 1);  addWire(b1.id, 0, bat.id, 0);
+    say('🔗 <b>Mạch Mẫu 2 (Hai đèn Nối tiếp):</b> Hiệu điện thế 12V của nguồn được chia đều cho mỗi đèn 6V!');
+  } else {
+    const bat = makeComp('battery', cx - 105, cy - 135, { v: 9 });
+    const sw  = makeComp('switch',  cx + 105, cy - 135, { closed: true });
+    const b1  = makeComp('bulb',    cx,       cy - 15,  { r: 10 });
+    const b2  = makeComp('bulb',    cx,       cy + 120, { r: 10 });
+    makeComp('voltmeter', cx + 260, cy - 10);
+    addWire(bat.id, 1, sw.id, 0); addWire(sw.id, 1, b1.id, 1); addWire(b1.id, 1, b2.id, 1);
+    addWire(bat.id, 0, b1.id, 0); addWire(b1.id, 0, b2.id, 0);
+    say('🌟 <b>Mạch Mẫu 3 (Hai đèn Song song):</b> Cả hai đèn đều nhận đủ hiệu điện thế 9V của nguồn nên sáng rực rỡ như nhau!');
+  }
+  solveCircuit(false);
+}
+
+let gmMode = 'free', buildLv = 0, docLv = 0, symLv = 0, unlockedHints = 0, totalScore = 0;
+let currentShuffledQuiz = [];
+
+const BUILD_TASKS = [
+  {
+    title: 'Màn 1/4: Thắp sáng bóng đèn đơn',
+    desc: 'Hãy nối dây tạo thành mạch điện kín gồm Nguồn Pin, Công tắc (đóng) và 1 Đèn tròn sao cho đèn sáng bình thường.',
+    setup: () => {
+      S.docMysteryActive = false; comps = []; wires = [];
+      const cx = W * 0.43, cy = H * 0.5;
+      makeComp('battery', cx - 120, cy - 100, { v: 9 });
+      makeComp('switch', cx + 120, cy - 100, { closed: false });
+      makeComp('bulb', cx, cy + 100, { r: 10 });
+      solveCircuit(false);
+    },
+    check: () => {
+      const lit = comps.filter(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.1);
+      if (S.shortCircuit) return { ok: false, msg: 'Mạch đang bị đoản mạch! Hãy kiểm tra lại dây nối.' };
+      if (lit.length >= 1) return { ok: true, msg: '🎉 Xuất sắc! Mạch kín hoàn chỉnh và đèn đã sáng rực!' };
+      return { ok: false, msg: 'Đèn vẫn chưa sáng! Em nhớ nối kín vòng mạch và bấm đóng Công tắc K nhé.' };
+    }
+  },
+  {
+    title: 'Màn 2/4: Mắc Ampe kế đo dòng điện',
+    desc: 'Hãy mắc Ampe kế NỐI TIẾP vào mạch để đo cường độ dòng điện chạy qua bóng đèn.',
+    setup: () => {
+      S.docMysteryActive = false; comps = []; wires = [];
+      const cx = W * 0.43, cy = H * 0.5;
+      const b = makeComp('battery', cx - 120, cy - 100, { v: 9 });
+      const k = makeComp('switch', cx + 120, cy - 100, { closed: true });
+      const d = makeComp('bulb', cx + 120, cy + 100, { r: 10 });
+      makeComp('ammeter', cx - 120, cy + 100);
+      addWire(b.id, 1, k.id, 0); addWire(k.id, 1, d.id, 1);
+      solveCircuit(false);
+    },
+    check: () => {
+      if (S.ammeterShort) return { ok: false, msg: '🚨 Sai rồi! Em đang mắc Ampe kế song song gây đoản mạch!' };
+      const am = comps.find(c => c.type === 'ammeter'), blb = comps.find(c => c.type === 'bulb' && !c.blown);
+      if (am && blb && Math.abs(blb.I) > 0.2 && Math.abs(am.I - Math.abs(blb.I)) < 0.05)
+        return { ok: true, msg: `🎉 Chuẩn xác! Ampe kế đã mắc nối tiếp, đo được I = ${fmt(am.I, 2)} A!` };
+      return { ok: false, msg: 'Ampe kế chưa đo được dòng điện qua đèn. Hãy mắc Ampe kế nối tiếp giữa đèn và nguồn nhé!' };
+    }
+  },
+  {
+    title: 'Màn 3/4: Dùng đồng hồ Hiệu thế đo đèn',
+    desc: 'Mạch đã có đèn sáng. Hãy kéo 2 que đo Đen và Đỏ của đồng hồ Hiệu thế chạm vào 2 đầu bóng đèn để đo số Vôn!',
+    setup: () => {
+      S.docMysteryActive = false; comps = []; wires = [];
+      const cx = W * 0.42, cy = H * 0.5;
+      const b = makeComp('battery', cx - 110, cy - 100, { v: 9 });
+      const k = makeComp('switch', cx + 110, cy - 100, { closed: true });
+      const d = makeComp('bulb', cx, cy + 95, { r: 10 });
+      makeComp('voltmeter', cx + 240, cy - 10);
+      addWire(b.id, 1, k.id, 0); addWire(k.id, 1, d.id, 1); addWire(d.id, 0, b.id, 0);
+      solveCircuit(false);
+    },
+    check: () => {
+      const vm = comps.find(c => c.type === 'voltmeter'), blb = comps.find(c => c.type === 'bulb' && !c.blown);
+      if (vm && blb && vm.connected && Math.abs(blb.I) > 0.2 && Math.abs(Math.abs(vm.U) - blb.U) < 0.2)
+        return { ok: true, msg: `🎉 Tuyệt vời! Hai que đo đã đặt chuẩn xác vào hai đầu đèn, đo được ${fmt(vm.U, 2)} V!` };
+      return { ok: false, msg: 'Hãy kéo 2 mũi kim Đen và Đỏ chạm vào 2 chốt tròn của bóng đèn nhé!' };
+    }
+  },
+  {
+    title: 'Màn 4/4: Lắp mạch 2 đèn mắc Song Song',
+    desc: 'Hãy nối dây để 2 bóng đèn mắc SONG SONG với nhau vào nguồn điện 9V sao cho cả hai đèn đều sáng mạnh.',
+    setup: () => {
+      S.docMysteryActive = false; comps = []; wires = [];
+      const cx = W * 0.43, cy = H * 0.5;
+      const b = makeComp('battery', cx - 105, cy - 130, { v: 9 });
+      const k = makeComp('switch', cx + 105, cy - 130, { closed: true });
+      makeComp('bulb', cx, cy - 10, { r: 10 }); makeComp('bulb', cx, cy + 120, { r: 10 });
+      addWire(b.id, 1, k.id, 0); solveCircuit(false);
+    },
+    check: () => {
+      const bulbs = comps.filter(c => c.type === 'bulb' && !c.blown), bat = comps.find(c => c.type === 'battery');
+      if (bulbs.length >= 2 && bat && !S.shortCircuit && bulbs.every(b => Math.abs(b.U - bat.v) < 0.3))
+        return { ok: true, msg: '🏆 Hoàn hảo! Hai bóng đèn đã mắc song song và cùng nhận đủ 9V!' };
+      return { ok: false, msg: 'Hai đèn chưa được mắc song song. Hãy kiểm tra lại nhé!' };
+    }
+  }
+];
+
+const DOC_TASKS = [
+  {
+    title: 'Ca đố 1/4: Bí ẩn bóng đèn tối om!',
+    desc: 'Mạch điện đã có Pin 9V và Công tắc K đang đóng, nhưng bóng đèn lại tối om không sáng, dây dẫn thì nóng bất thường! Em hãy tìm điểm bất thường và sửa lại cho đèn sáng.',
+    hints: [
+      '💡 <b>Gợi ý 1:</b> Hãy nhìn đường chạy của các hạt Electron! Dòng điện đang đi đường vòng mà không đi qua bóng đèn.',
+      '💡 <b>Gợi ý 2:</b> Có một sợi dây đang nối trực tiếp giữa 2 chốt của bóng đèn gây nối tắt. Hãy bấm nút <b>"✂️ Cắt dây"</b> trên thanh công cụ và cắt bỏ sợi dây ngang qua bóng đèn đó!'
+    ],
+    setup: () => {
+      S.docMysteryActive = true; comps = []; wires = [];
+      const cx = W * 0.43, cy = H * 0.5;
+      const b = makeComp('battery', cx - 115, cy - 100, { v: 9 });
+      const k = makeComp('switch', cx + 115, cy - 100, { closed: true });
+      const d = makeComp('bulb', cx, cy + 100, { r: 10 });
+      addWire(b.id, 1, k.id, 0); addWire(k.id, 1, d.id, 1); addWire(d.id, 0, b.id, 0); addWire(d.id, 0, d.id, 1);
+      solveCircuit(false);
+    },
+    check: () => { const res = BUILD_TASKS[0].check(); if (res.ok) S.docMysteryActive = false; return res; }
+  },
+  {
+    title: 'Ca đố 2/4: Sự cố khi đo dòng điện!',
+    desc: 'Một bạn học sinh lắp thêm dụng cụ đo vào mạch nhưng vừa đóng công tắc là mạch chập cháy, đèn không sáng! Hãy tìm nguyên nhân và mắc lại dụng cụ đo cho đúng.',
+    hints: [
+      '💡 <b>Gợi ý 1:</b> Hãy nhìn vào Ampe kế! Dòng điện toàn mạch đang dồn hết qua Ampe kế vì nó có điện trở gần bằng 0 Ω.',
+      '💡 <b>Gợi ý 2:</b> Ampe kế đang bị mắc SONG SONG với đèn. Hãy bật <b>"✂️ Cắt dây"</b> tháo dây ở Ampe kế ra và mắc lại Ampe kế <b>NỐI TIẾP</b> trên cùng 1 vòng mạch với bóng đèn!'
+    ],
+    setup: () => {
+      S.docMysteryActive = true; comps = []; wires = [];
+      const cx = W * 0.43, cy = H * 0.5;
+      const b = makeComp('battery', cx - 115, cy - 125, { v: 9 });
+      const k = makeComp('switch', cx + 115, cy - 125, { closed: true });
+      const d = makeComp('bulb', cx, cy - 5, { r: 10 });
+      const a = makeComp('ammeter', cx, cy + 120);
+      addWire(b.id, 1, k.id, 0); addWire(k.id, 1, d.id, 1); addWire(d.id, 0, b.id, 0);
+      addWire(d.id, 1, a.id, 1); addWire(d.id, 0, a.id, 0);
+      solveCircuit(false);
+    },
+    check: () => { const res = BUILD_TASKS[1].check(); if (res.ok) S.docMysteryActive = false; return res; }
+  },
+  {
+    title: 'Ca đố 3/4: Cầu chì nổ liên hoàn!',
+    desc: 'Mạch điện bị đứt Cầu chì nên đèn tắt. Nhưng hễ bấm vào Cầu chì chọn "🛠️ Sửa mới" là nó lại nổ tách ngay lập tức! Hãy tìm lỗi gây quá tải, khắc phục xong rồi sửa lại Cầu chì nhé.',
+    hints: [
+      '💡 <b>Gợi ý 1:</b> Cầu chì tự đứt vì dòng điện vượt quá 2.5A. Hãy kiểm tra xem có sợi dây nào đi tắt từ Cầu chì về thẳng cực Âm của Pin không?',
+      '💡 <b>Gợi ý 2:</b> Hãy dùng <b>"✂️ Cắt dây"</b> cắt bỏ sợi dây nối chéo giữa Cầu chì và cực Âm của Pin, sau đó bấm vào Cầu chì chọn <b>"🛠️ Sửa mới"</b>!'
+    ],
+    setup: () => {
+      S.docMysteryActive = true; comps = []; wires = [];
+      const cx = W * 0.43, cy = H * 0.5;
+      const b = makeComp('battery', cx - 120, cy - 100, { v: 9 });
+      const f = makeComp('fuse', cx + 120, cy - 100);
+      const d = makeComp('bulb', cx, cy + 100, { r: 10 });
+      addWire(b.id, 1, f.id, 0); addWire(f.id, 1, d.id, 1); addWire(d.id, 0, b.id, 0); addWire(f.id, 1, b.id, 0);
+      solveCircuit(false);
+    },
+    check: () => {
+      const f = comps.find(c => c.type === 'fuse'), d = comps.find(c => c.type === 'bulb');
+      if (f && !f.blown && d && !d.blown && Math.abs(d.I) > 0.2 && !S.shortCircuit) {
+        S.docMysteryActive = false;
+        return { ok: true, msg: '🎉 Quá giỏi! Em đã tìm ra sợi dây gây chập mạch và khôi phục Cầu chì hoạt động an toàn!' };
+      }
+      return { ok: false, msg: 'Đèn vẫn chưa sáng hoặc Cầu chì vẫn đang bị đứt!' };
+    }
+  },
+  {
+    title: 'Ca đố 4/4: Hai bóng đèn sáng quá yếu!',
+    desc: 'Mạch điện có 2 bóng đèn nhưng cả hai đều sáng lờ mờ. Hãy tìm nguyên nhân và sửa lại dây nối để cả 2 đèn đều nhận đủ 9V sáng rực rỡ!',
+    hints: [
+      '💡 <b>Gợi ý 1:</b> Thử kéo 2 que đo của đồng hồ Hiệu thế vào 2 đầu mỗi bóng đèn xem: mỗi đèn hiện chỉ nhận được 4.5V!',
+      '💡 <b>Gợi ý 2:</b> Hai đèn đang mắc NỐI TIẾP nên bị yếu. Hãy cắt dây và mắc lại thành <b>2 nhánh SONG SONG</b>!'
+    ],
+    setup: () => {
+      S.docMysteryActive = true; comps = []; wires = [];
+      const cx = W * 0.42, cy = H * 0.5;
+      const b = makeComp('battery', cx - 115, cy - 105, { v: 9 });
+      const k = makeComp('switch', cx + 115, cy - 105, { closed: true });
+      const d1 = makeComp('bulb', cx - 115, cy + 95, { r: 10 });
+      const d2 = makeComp('bulb', cx + 115, cy + 95, { r: 10 });
+      makeComp('voltmeter', cx + 250, cy - 10);
+      addWire(b.id, 1, k.id, 0); addWire(k.id, 1, d2.id, 1); addWire(d2.id, 0, d1.id, 1); addWire(d1.id, 0, b.id, 0);
+      solveCircuit(false);
+    },
+    check: () => { const res = BUILD_TASKS[3].check(); if (res.ok) S.docMysteryActive = false; return res; }
+  }
+];
+
+const SYM_QUIZ = [
+  {
+    q: 'Ký hiệu vòng tròn có dấu nhân (⊗) bên trong biểu diễn bộ phận nào?',
+    svg: `<circle cx="60" cy="24" r="15" fill="none" stroke="#fff" stroke-width="2.5"/><line x1="49" y1="13" x2="71" y2="35" stroke="#fff" stroke-width="2.5"/><line x1="71" y1="13" x2="49" y2="35" stroke="#fff" stroke-width="2.5"/>`,
+    opts: ['Bóng đèn sợi đốt', 'Ampe kế', 'Nguồn điện', 'Chuông điện'], ans: 0
+  },
+  {
+    q: 'Trong ký hiệu Nguồn điện (Pin), vạch dài mảnh và vạch ngắn đậm biểu thị cực nào?',
+    svg: `<line x1="25" y1="24" x2="54" y2="24" stroke="#fff" stroke-width="2.5"/><line x1="54" y1="10" x2="54" y2="38" stroke="#ffc93c" stroke-width="2.5"/><line x1="66" y1="16" x2="66" y2="32" stroke="#38bdf8" stroke-width="5"/><line x1="66" y1="24" x2="95" y2="24" stroke="#fff" stroke-width="2.5"/>`,
+    opts: ['Vạch dài: Cực (+), Vạch ngắn: Cực (-)', 'Vạch dài: Cực (-), Vạch ngắn: Cực (+)', 'Hai cực như nhau', 'Ký hiệu của Cầu chì'], ans: 0
+  },
+  {
+    q: 'Để đo cường độ dòng điện qua bóng đèn, ta chọn dụng cụ có ký hiệu nào và mắc ra sao?',
+    svg: `<circle cx="60" cy="24" r="15" fill="none" stroke="#fff" stroke-width="2.5"/><text x="60" y="29" fill="#ff9f43" font-size="15" font-weight="800" text-anchor="middle">A</text>`,
+    opts: ['Ampe kế - Mắc nối tiếp', 'Ampe kế - Mắc song song', 'Vôn kế - Mắc nối tiếp', 'Vôn kế - Mắc song song'], ans: 0
+  },
+  {
+    q: 'Ký hiệu hình chữ nhật có đường thẳng chạy xuyên qua giữa biểu diễn linh kiện nào?',
+    svg: `<line x1="20" y1="24" x2="100" y2="24" stroke="#ffc93c" stroke-width="2.5"/><rect x="40" y="15" width="40" height="18" fill="none" stroke="#fff" stroke-width="2.5"/>`,
+    opts: ['Cầu chì bảo vệ', 'Điện trở cố định', 'Biến trở', 'Công tắc đóng'], ans: 0
+  }
+];
+
+function shuffleQuizOptions(qObj) {
+  const arr = qObj.opts.map((txt, i) => ({ txt, isCorrect: i === qObj.ans }));
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderTaskCard(reshuffle = true) {
+  const card = $('taskCard'), body = $('taskBody'), btns = $('taskBtns'), hintBtn = $('hintTaskBtn');
+  if (gmMode === 'free') { card.classList.remove('show'); S.docMysteryActive = false; updateHUD(); return; }
+  card.classList.add('show');
+  $('scoreLbl').textContent = `${totalScore} điểm`;
+
+  if (gmMode === 'build') {
+    $('taskHeaderTitle').textContent = '🎯 Thử thách Đo & Lắp';
+    btns.style.display = 'flex'; hintBtn.style.display = 'none';
+    const t = BUILD_TASKS[buildLv];
+    body.innerHTML = `<div class="task-box"><h4>${t.title}</h4><p>${t.desc}</p></div>`;
+    $('progBar').style.width = `${((buildLv + 1) / BUILD_TASKS.length) * 100}%`;
+    $('progLbl').textContent = `Màn ${buildLv + 1}/${BUILD_TASKS.length}`;
+  } else if (gmMode === 'doc') {
+    $('taskHeaderTitle').textContent = '🩺 Bác sĩ Mạch điện';
+    btns.style.display = 'flex'; hintBtn.style.display = 'inline-flex';
+    const t = DOC_TASKS[docLv];
+    hintBtn.textContent = unlockedHints < t.hints.length
+      ? `💡 Mở Gợi ý ${unlockedHints + 1} (${unlockedHints}/${t.hints.length})`
+      : `💡 Xem lại (${t.hints.length}/${t.hints.length})`;
+    const pinnedHTML = unlockedHints > 0
+      ? `<div class="pinned-hints">` + t.hints.slice(0, unlockedHints).map((h, i) =>
+          `<div class="hint-item" onclick="showSpecificHint(${i})">${h}</div>`).join('') + `</div>`
+      : '';
+    body.innerHTML = `<div class="task-box" style="border-left-color:var(--accent)"><h4>${t.title}</h4><p>${t.desc}</p></div>${pinnedHTML}`;
+    $('progBar').style.width = `${((docLv + 1) / DOC_TASKS.length) * 100}%`;
+    $('progLbl').textContent = `Ca đố ${docLv + 1}/${DOC_TASKS.length}`;
+  } else if (gmMode === 'sym') {
+    $('taskHeaderTitle').textContent = '📐 Đố vui Ký hiệu';
+    btns.style.display = 'none';
+    const q = SYM_QUIZ[symLv];
+    if (reshuffle || currentShuffledQuiz.length === 0) currentShuffledQuiz = shuffleQuizOptions(q);
+    body.innerHTML = `
+      <div style="background:#0b1528;border-radius:9px;height:48px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+        <svg width="120" height="48">${q.svg}</svg>
+      </div>
+      <div style="font-size:.77rem;font-weight:700;color:var(--ink)">Câu ${symLv + 1}/${SYM_QUIZ.length}: ${q.q}</div>
+      <div class="quiz-list">${currentShuffledQuiz.map((item, idx) => `<button class="quiz-opt" onclick="answerQuiz(${idx})">${item.txt}</button>`).join('')}</div>`;
+    $('progBar').style.width = `${((symLv + 1) / SYM_QUIZ.length) * 100}%`;
+    $('progLbl').textContent = `Câu ${symLv + 1}/${SYM_QUIZ.length}`;
+  }
+}
+
+window.showSpecificHint = idx => {
+  if (gmMode !== 'doc') return;
+  const t = DOC_TASKS[docLv];
+  if (t.hints[idx]) { sfxClick(700); say(t.hints[idx]); }
+};
+
+window.answerQuiz = idx => {
+  const chosen = currentShuffledQuiz[idx];
+  if (chosen && chosen.isCorrect) {
+    sfxWin(); totalScore += 25; symLv = (symLv + 1) % SYM_QUIZ.length;
+    say('🎉 <b>Chính xác!</b> Em nắm rất vững ký hiệu sơ đồ mạch điện đấy!', 'ok');
+    renderTaskCard(true);
+  } else {
+    sfxClick(220);
+    say('🤔 <b>Chưa đúng rồi!</b> Thứ tự đáp án đã được trộn lại, em hãy quan sát kỹ ký hiệu rồi chọn lại nhé!', 'warn');
+    renderTaskCard(true);
+  }
+};
+
+function switchStudioMode(m) {
+  gmMode = m; unlockedHints = 0;
+  document.querySelectorAll('#modeTabs button').forEach(x => x.classList.toggle('on', x.dataset.m === m));
+  renderTaskCard(true);
+  if (gmMode === 'build') {
+    BUILD_TASKS[buildLv].setup();
+    say('🎯 <b>Chế độ Đo & Lắp:</b> Hãy hoàn thành yêu cầu trong thẻ nhiệm vụ bên phải rồi bấm <b>"✅ Kiểm tra"</b> nhé!');
+  } else if (gmMode === 'doc') {
+    DOC_TASKS[docLv].setup();
+    say('🩺 <b>Bác sĩ Mạch điện:</b> Mạch trên bàn đang gặp sự cố bí ẩn! Hãy tự tìm lỗi và sửa lại, hoặc bấm nút <b>"💡 Mở Gợi ý 1"</b> nhé.');
+  }
+}
+
+document.querySelectorAll('#modeTabs button').forEach(b => b.onclick = () => switchStudioMode(b.dataset.m));
+
+document.querySelectorAll('#viewSeg button').forEach(b => b.onclick = () => {
+  S.view = b.dataset.v;
+  document.querySelectorAll('#viewSeg button').forEach(x => x.classList.toggle('on', x === b));
+});
+
+const FLOW_MODES = [
+  { id: 'elec', lbl: '🔵 Hạt Electron (- → +)' },
+  { id: 'conv', lbl: '🔺 Dòng quy ước (+ → -)' },
+  { id: 'none', lbl: '⚪ Ẩn dòng hạt' }
+];
+let flowIdx = 0;
+$('flowBtn').onclick = () => {
+  flowIdx = (flowIdx + 1) % FLOW_MODES.length;
+  S.flow = FLOW_MODES[flowIdx].id;
+  $('flowBtn').textContent = FLOW_MODES[flowIdx].lbl;
+};
+
+$('cutBtn').onclick = () => {
+  S.cutMode = !S.cutMode;
+  $('cutBtn').classList.toggle('cut-active', S.cutMode);
+  cv.style.cursor = S.cutMode ? 'not-allowed' : 'default';
+  updateHUD();
+  if (!(gmMode === 'doc' && unlockedHints > 0)) {
+    say(S.cutMode ? '✂️ <b>Đã bật Kéo cắt dây:</b> Bấm vào sợi dây bất kỳ để tháo bỏ!' : 'Đã tắt chế độ cắt dây.');
+  }
+};
+
+$('presetBtn').onclick = () => { S.presetIdx = (S.presetIdx + 1) % 3; loadPreset(S.presetIdx); };
+$('clearBtn').onclick = () => { comps = []; wires = []; S.selectedId = null; S.docMysteryActive = false; solveCircuit(false); };
+
+$('loadTaskBtn').onclick = () => {
+  if (gmMode === 'build') BUILD_TASKS[buildLv].setup();
+  else if (gmMode === 'doc') { DOC_TASKS[docLv].setup(); renderTaskCard(false); }
+};
+
+$('hintTaskBtn').onclick = () => {
+  if (gmMode !== 'doc') return;
+  const t = DOC_TASKS[docLv];
+  if (unlockedHints < t.hints.length) {
+    const msg = t.hints[unlockedHints]; unlockedHints++;
+    sfxClick(720); say(msg); renderTaskCard(false);
+  } else {
+    sfxClick(720); say(t.hints.join('<br><br>'));
+  }
+};
+
+$('checkTaskBtn').onclick = () => {
+  const list = gmMode === 'build' ? BUILD_TASKS : DOC_TASKS;
+  const idx = gmMode === 'build' ? buildLv : docLv;
+  const res = list[idx].check();
+  if (res.ok) {
+    sfxWin(); totalScore += 50; unlockedHints = 0; say(res.msg, 'ok');
+    if (gmMode === 'build') { buildLv = (buildLv + 1) % BUILD_TASKS.length; BUILD_TASKS[buildLv].setup(); }
+    else { docLv = (docLv + 1) % DOC_TASKS.length; DOC_TASKS[docLv].setup(); }
+    renderTaskCard(true);
+  } else {
+    sfxClick(220); say(res.msg, 'warn');
+  }
+};
+
+/* ==================== 8. VÒNG LẶP KẾT XUẤT KÉP (3D ROOM + 2D STUDIO) ==================== */
+let lastT = performance.now();
+function animate(now) {
+  const dt = Math.min(50, now - lastT);
+  lastT = now;
+
+  if (!inStudio) {
+    // Cập nhật hiệu ứng bay mượt khi chọn Khu vực từ Menu
+    if (flyAnim) {
+      flyAnim.progress = Math.min(1, flyAnim.progress + dt * 0.0022);
+      const t = 1 - Math.pow(1 - flyAnim.progress, 3); // Ease-out cubic
+      camera.position.x = flyAnim.startX + (flyAnim.endX - flyAnim.startX) * t;
+      camera.position.z = flyAnim.startZ + (flyAnim.endZ - flyAnim.startZ) * t;
+      camYaw   = flyAnim.startYaw   + (flyAnim.endYaw   - flyAnim.startYaw) * t;
+      camPitch = flyAnim.startPitch + (flyAnim.endPitch - flyAnim.startPitch) * t;
+      if (flyAnim.progress >= 1) flyAnim = null;
+    } else {
+      // Di chuyển bằng Bàn phím hoặc Joystick ảo góc dưới phải
+      const spd = 0.0055 * dt;
+      let fwd = (keys3D.w ? 1 : 0) - (keys3D.s ? 1 : 0) - joyVec.y;
+      let str = (keys3D.d ? 1 : 0) - (keys3D.a ? 1 : 0) + joyVec.x;
+      if (Math.abs(fwd) > 0.01 || Math.abs(str) > 0.01) {
+        movePlayer3D(fwd * spd, str * spd);
+      }
+    }
+
+    // Hiệu ứng nhấp nhô nhẹ cho Robo 3D ở bàn trung tâm
+    robo3D.position.y = 1.45 + Math.sin(now * 0.003) * 0.06;
+    robo3D.rotation.y = Math.sin(now * 0.0015) * 0.35;
+
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = camYaw;
+    camera.rotation.x = camPitch;
+    renderer.render(scene, camera);
+  } else {
+    // Vẽ bàn thực hành mạch điện 2D
+    drawGrid();
+    drawWires(dt);
+    if (wireStart) {
+      g.save(); g.strokeStyle = '#ffc93c'; g.lineWidth = 4; g.setLineDash([6, 5]);
+      g.beginPath(); g.moveTo(wireStart.x, wireStart.y); g.lineTo(mousePos.x, mousePos.y); g.stroke(); g.restore();
+    }
+    comps.filter(c => c.type !== 'voltmeter').forEach(c => drawComp(c, now, dt));
+    comps.filter(c => c.type === 'voltmeter').forEach(c => drawComp(c, now, dt));
+
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const sp = sparks[i];
+      sp.x += sp.vx; sp.y += sp.vy; sp.vy += 0.18; sp.life -= 0.035;
+      if (sp.life <= 0) { sparks.splice(i, 1); continue; }
+      g.fillStyle = sp.col; g.globalAlpha = sp.life;
+      g.beginPath(); g.arc(sp.x, sp.y, 2.8, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+resize2D();
+loadPreset(0);
+renderTaskCard(true);
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
