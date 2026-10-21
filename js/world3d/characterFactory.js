@@ -10,12 +10,60 @@
    - Tự động nạp file assets/models/student.glb nếu có (GLTFLoader), fallback về mô hình Procedural cao cấp
    ========================================================================== */
 
+// Hàm tạo lưới chân váy xếp ly 3D đồng phục nữ sinh THCS
+function createPleatedSkirtGeometry(waistR = 0.125, hemR = 0.178, height = 0.16, pleats = 16) {
+  const geom = new THREE.BufferGeometry();
+  const vertices = [];
+  const indices = [];
+  const uvs = [];
+
+  const segments = pleats * 2;
+  const dTheta = (Math.PI * 2) / segments;
+
+  for (let i = 0; i <= segments; i++) {
+    const theta = i * dTheta;
+    const isOut = i % 2 === 0;
+    const rTop = waistR * (isOut ? 1.03 : 0.97);
+    const rBot = hemR * (isOut ? 1.05 : 0.95);
+
+    const xTop = Math.cos(theta) * rTop;
+    const zTop = Math.sin(theta) * rTop;
+    const yTop = height / 2;
+
+    const xBot = Math.cos(theta) * rBot;
+    const zBot = Math.sin(theta) * rBot;
+    const yBot = -height / 2;
+
+    vertices.push(xTop, yTop, zTop);
+    vertices.push(xBot, yBot, zBot);
+
+    uvs.push(i / segments, 1);
+    uvs.push(i / segments, 0);
+  }
+
+  for (let i = 0; i < segments; i++) {
+    const i0 = i * 2;
+    const i1 = i0 + 1;
+    const i2 = i0 + 2;
+    const i3 = i0 + 3;
+    indices.push(i0, i1, i2);
+    indices.push(i2, i1, i3);
+  }
+
+  geom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geom.setIndex(indices);
+  geom.computeVertexNormals();
+  return geom;
+}
+
 export function createStudentCharacter(config = {}) {
   const group = new THREE.Group();
 
   // Kiểm tra nếu có file model GLTF cục bộ và có GLTFLoader
   const modelPath = config.modelUrl || 'assets/models/student.glb';
   let gltfLoaded = false;
+  const isFemale = (config.gender === 'female');
 
   if (typeof THREE.GLTFLoader !== 'undefined') {
     const loader = new THREE.GLTFLoader();
@@ -30,14 +78,17 @@ export function createStudentCharacter(config = {}) {
         gltfLoaded = true;
         const model = gltf.scene;
         
-        // Tỷ lệ chuẩn: Chiều cao học sinh THCS ~ 1.88m (đứng ngang tầm bàn thí nghiệm 1.0m)
-        const targetScale = config.scale || 1.88;
+        // Tỷ lệ chuẩn: Chiều cao học sinh THCS (Nam: 1.88m | Nữ: 1.82m dáng thanh thoát)
+        const targetScale = config.scale || (isFemale ? 1.82 : 1.88);
         model.scale.set(targetScale, targetScale, targetScale);
 
-        // Bảng màu đồng phục chuẩn học sinh THCS Việt Nam: Áo trắng + Quần tây đen + Khăn quàng đỏ
+        // Bảng màu đồng phục chuẩn học sinh THCS Việt Nam: Áo sơ mi trắng + Quần đen (Nam) / Chân váy xếp ly xanh than (Nữ)
         const shirtColor = new THREE.Color(config.shirtColor || 0xffffff); // Áo sơ mi trắng đồng phục
-        const pantsColor = new THREE.Color(0x18181b); // Quần tây màu đen tuyền học sinh THCS
-        const shoeDark = new THREE.Color(0x1e293b);   // Giày thể thao đen lịch sự
+        const pantsColor = new THREE.Color(0x18181b); // Quần tây màu đen tuyền học sinh nam
+        const skirtColor = new THREE.Color(0x1e293b); // Chân váy màu xanh than học sinh nữ
+        const shoeDark   = new THREE.Color(0x0f172a); // Giày tối màu lịch sự
+        const sockColor  = new THREE.Color(isFemale ? 0xf8fafc : 0x334155); // Nữ vớ trắng cao cổ, nam vớ tối
+        const hairColor  = new THREE.Color(isFemale ? 0x241610 : 0x2e1a12); // Tóc mượt mà tự nhiên
 
         model.traverse(child => {
           if (child.isMesh) {
@@ -45,8 +96,15 @@ export function createStudentCharacter(config = {}) {
             child.receiveShadow = true;
 
             const name = (child.name || '').toLowerCase();
-            // Đồng phục áo sơ mi trắng
-            if (name.includes('shirt') || name.includes('sleeve')) {
+            if (name.includes('hair')) {
+              if (child.material) {
+                child.material = child.material.clone();
+                child.material.color = hairColor;
+                child.material.roughness = isFemale ? 0.45 : 0.65;
+                child.material.needsUpdate = true;
+              }
+            } else if (name.includes('shirt') || name.includes('sleeve')) {
+              // Đồng phục áo sơ mi trắng tinh khôi
               if (child.material) {
                 child.material = child.material.clone();
                 child.material.color = shirtColor;
@@ -55,30 +113,148 @@ export function createStudentCharacter(config = {}) {
                 child.material.needsUpdate = true;
               }
             } else if (name.includes('short') || name.includes('pant') || name.includes('leg')) {
-              // Quần tây màu đen chuẩn học sinh cấp 2
-              if (child.material) {
-                child.material = child.material.clone();
-                child.material.color = pantsColor;
-                child.material.map = null;
-                child.material.roughness = 0.85;
-                child.material.needsUpdate = true;
+              if (isFemale && (name.includes('short') || name.includes('pant'))) {
+                // Với học sinh nữ, ẩn quần đùi nam để thay bằng chân váy xếp ly đồng phục
+                child.visible = false;
+              } else {
+                if (child.material) {
+                  child.material = child.material.clone();
+                  child.material.color = pantsColor;
+                  child.material.map = null;
+                  child.material.roughness = 0.85;
+                  child.material.needsUpdate = true;
+                }
               }
-            } else if (name.includes('shoe') || name.includes('sock')) {
-              // Giày thể thao màu tối lịch sự
+            } else if (name.includes('sock')) {
+              // Vớ trắng nữ sinh hoặc vớ sẫm nam sinh
               if (child.material) {
                 child.material = child.material.clone();
-                child.material.color = shoeDark;
+                child.material.color = sockColor;
                 child.material.map = null;
                 child.material.roughness = 0.65;
                 child.material.needsUpdate = true;
               }
+            } else if (name.includes('shoe')) {
+              // Giày thể thao / búp bê màu tối lịch sự
+              if (child.material) {
+                child.material = child.material.clone();
+                child.material.color = shoeDark;
+                child.material.map = null;
+                child.material.roughness = isFemale ? 0.35 : 0.65;
+                child.material.needsUpdate = true;
+              }
             } else if (name.includes('face') || name.includes('skin') || name.includes('hand') || name.includes('arm')) {
               if (child.material) {
-                child.material.roughness = 0.55;
+                child.material.roughness = isFemale ? 0.50 : 0.55;
               }
             }
           }
         });
+
+        // ==================== PHỤ KIỆN ĐẶC BIỆT DÀNH CHO HỌC SINH NỮ ====================
+        if (isFemale) {
+          const femaleAccGroup = new THREE.Group();
+
+          // 1. Chân váy xếp ly đồng phục nữ sinh (Pleated Skirt)
+          const skirtGeo = createPleatedSkirtGeometry(0.125, 0.178, 0.16, 16);
+          const skirtMat = new THREE.MeshStandardMaterial({
+            color: skirtColor,
+            roughness: 0.72,
+            side: THREE.DoubleSide
+          });
+          const skirt = new THREE.Mesh(skirtGeo, skirtMat);
+          skirt.position.set(0, 0.28, 0.015);
+          skirt.castShadow = true;
+          skirt.receiveShadow = true;
+          femaleAccGroup.add(skirt);
+
+          // 2. Nơ bướm đỏ xinh xắn dưới cổ áo sơ mi (Collar Ribbon Bow)
+          const ribbonMat = new THREE.MeshStandardMaterial({
+            color: 0xd92638,
+            roughness: 0.38,
+            metalness: 0.05
+          });
+          const ribbonKnot = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), ribbonMat);
+          ribbonKnot.position.set(0, 0.655, 0.098);
+          femaleAccGroup.add(ribbonKnot);
+
+          [-0.024, 0.024].forEach((rx, idx) => {
+            const wing = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.022, 0.012), ribbonMat);
+            wing.position.set(rx, 0.655, 0.098);
+            wing.rotation.z = idx === 0 ? 0.38 : -0.38;
+            femaleAccGroup.add(wing);
+          });
+
+          [-0.012, 0.012].forEach((tx, idx) => {
+            const tail = new THREE.Mesh(new THREE.BoxGeometry(0.014, 0.055, 0.008), ribbonMat);
+            tail.position.set(tx, 0.622, 0.099);
+            tail.rotation.z = idx === 0 ? -0.15 : 0.15;
+            femaleAccGroup.add(tail);
+          });
+
+          // 3. Tóc buộc hai bên bồng bềnh (Twintails) & Tóc mai mềm mại
+          const femaleHairMat = new THREE.MeshStandardMaterial({
+            color: hairColor,
+            roughness: 0.45,
+            metalness: 0.05
+          });
+          const hairTieMat = new THREE.MeshStandardMaterial({
+            color: 0xef4444,
+            roughness: 0.35
+          });
+
+          [-0.14, 0.14].forEach((hx, idx) => {
+            const twintailGroup = new THREE.Group();
+            twintailGroup.position.set(hx, 0.77, -0.02);
+
+            const tie = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.007, 8, 16), hairTieMat);
+            tie.rotation.x = Math.PI / 2;
+            twintailGroup.add(tie);
+
+            const tailGeo = new THREE.CylinderGeometry(0.028, 0.008, 0.22, 10);
+            tailGeo.translate(0, -0.10, 0);
+            const tail = new THREE.Mesh(tailGeo, femaleHairMat);
+            tail.rotation.z = idx === 0 ? 0.22 : -0.22;
+            tail.rotation.x = 0.06;
+            tail.castShadow = true;
+            twintailGroup.add(tail);
+
+            femaleAccGroup.add(twintailGroup);
+          });
+
+          // Tóc mai mềm mại buông nhẹ hai bên má
+          [-0.13, 0.13].forEach((sx, idx) => {
+            const lockGeo = new THREE.CylinderGeometry(0.012, 0.003, 0.16, 8);
+            lockGeo.translate(0, -0.07, 0);
+            const lock = new THREE.Mesh(lockGeo, femaleHairMat);
+            lock.position.set(sx, 0.71, 0.08);
+            lock.rotation.z = idx === 0 ? -0.06 : 0.06;
+            lock.rotation.x = 0.06;
+            femaleAccGroup.add(lock);
+          });
+
+          // Kẹp tóc màu vàng đáng yêu bên mái trái
+          const clipMesh = new THREE.Mesh(
+            new THREE.BoxGeometry(0.032, 0.016, 0.008),
+            new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.3, metalness: 0.4 })
+          );
+          clipMesh.position.set(-0.085, 0.85, 0.14);
+          clipMesh.rotation.z = 0.35;
+          femaleAccGroup.add(clipMesh);
+
+          // 4. Má hồng phớt đáng yêu (Blush)
+          [-0.072, 0.072].forEach(bx => {
+            const blush = new THREE.Mesh(
+              new THREE.SphereGeometry(0.022, 10, 8),
+              new THREE.MeshBasicMaterial({ color: 0xf472b6, transparent: true, opacity: 0.65 })
+            );
+            blush.scale.set(1.4, 0.75, 0.2);
+            blush.position.set(bx, 0.695, 0.168);
+            femaleAccGroup.add(blush);
+          });
+
+          model.add(femaleAccGroup);
+        }
 
         // Tìm các khớp xương cánh tay và đầu để tạo dáng đứng tự nhiên bên bàn thí nghiệm
         let headBone = null;
@@ -98,23 +274,32 @@ export function createStudentCharacter(config = {}) {
           }
         });
 
-        // Đưa hai tay từ dáng T-pose xuôi tự nhiên xuống hai bên hông
-        if (lUpperarm) {
-          lUpperarm.rotation.z = -1.35;
-          lUpperarm.rotation.x = 0.08;
-        }
-        if (rUpperarm) {
-          rUpperarm.rotation.z = 1.35;
-          rUpperarm.rotation.x = 0.08;
-        }
-        if (lForearm) {
-          lForearm.rotation.z = -0.15;
-        }
-        if (rForearm) {
-          rForearm.rotation.z = 0.15;
+        // Tạo dáng đứng tự nhiên
+        if (isFemale) {
+          if (lUpperarm) {
+            lUpperarm.rotation.z = -1.38;
+            lUpperarm.rotation.x = 0.12;
+          }
+          if (rUpperarm) {
+            rUpperarm.rotation.z = 1.32;
+            rUpperarm.rotation.x = 0.12;
+          }
+          if (headBone) {
+            headBone.rotation.z = 0.05; // Nghiêng đầu nhẹ đáng yêu
+          }
+        } else {
+          if (lUpperarm) {
+            lUpperarm.rotation.z = -1.35;
+            lUpperarm.rotation.x = 0.08;
+          }
+          if (rUpperarm) {
+            rUpperarm.rotation.z = 1.35;
+            rUpperarm.rotation.x = 0.08;
+          }
         }
 
-
+        if (lForearm) lForearm.rotation.z = -0.15;
+        if (rForearm) rForearm.rotation.z = 0.15;
 
         // Hoạt ảnh thở nhẹ và nghiêng đầu tự nhiên quan sát lớp học
         group.update = function(time) {
@@ -124,16 +309,17 @@ export function createStudentCharacter(config = {}) {
           if (headBone) {
             headBone.rotation.y = Math.sin(time * 0.001) * 0.15;
             headBone.rotation.x = Math.sin(time * 0.0014) * 0.04;
+            if (isFemale) headBone.rotation.z = 0.05 + Math.sin(time * 0.0012) * 0.02;
           } else {
             model.rotation.y = Math.sin(time * 0.001) * 0.06;
           }
 
           // Cánh tay đung đưa nhẹ theo nhịp thở
           if (lUpperarm) {
-            lUpperarm.rotation.z = -1.35 + Math.sin(time * 0.002) * 0.03;
+            lUpperarm.rotation.z = (isFemale ? -1.38 : -1.35) + Math.sin(time * 0.002) * 0.03;
           }
           if (rUpperarm) {
-            rUpperarm.rotation.z = 1.35 - Math.sin(time * 0.002) * 0.03;
+            rUpperarm.rotation.z = (isFemale ? 1.32 : 1.35) - Math.sin(time * 0.002) * 0.03;
           }
         };
 

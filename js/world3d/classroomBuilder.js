@@ -3,8 +3,8 @@
                                     Cửa sổ kính thật nhìn ra thiên nhiên
    ========================================================================== */
 
-import { ROOM_W, ROOM_D, ROOM_H, getCamera } from './sceneManager.js?v=25';
-import { createStudentCharacter } from './characterFactory.js?v=25';
+import { ROOM_W, ROOM_D, ROOM_H, getCamera } from './sceneManager.js?v=28';
+import { createStudentCharacter } from './characterFactory.js?v=28';
 
 export const interactables3D = [];
 export const animatedElements3D = [];
@@ -1257,7 +1257,7 @@ function buildSampleStations(parentGroup) {
     subtitle: 'Pin 9V + Khóa K + Đèn tròn + Vôn kế',
     schemeType: 'sample1',
     studentShirt: 0xffffff, // Áo trắng đồng phục
-    studentGender: 'female',
+    studentGender: 'male',
     actionData: {
       label: '👁️ Xem Mạch Mẫu 1 (Mạch đơn – Chỉ quan sát & Đo thử)',
       mode: 'free',
@@ -1274,7 +1274,7 @@ function buildSampleStations(parentGroup) {
     subtitle: 'Cường độ dòng điện I bằng nhau · U chia đều',
     schemeType: 'sample2',
     studentShirt: 0xffffff,
-    studentGender: 'male',
+    studentGender: 'female',
     actionData: {
       label: '👁️ Xem Mạch Mẫu 2 (2 Đèn Nối Tiếp – Chỉ quan sát & Đo thử)',
       mode: 'free',
@@ -1291,7 +1291,7 @@ function buildSampleStations(parentGroup) {
     subtitle: 'Cùng hiệu điện thế U · Đèn sáng mạnh độc lập',
     schemeType: 'sample3',
     studentShirt: 0xffffff,
-    studentGender: 'female',
+    studentGender: 'male',
     actionData: {
       label: '👁️ Xem Mạch Mẫu 3 (2 Đèn Song Song – Chỉ quan sát & Đo thử)',
       mode: 'free',
@@ -2065,7 +2065,7 @@ function buildDoctorStation(parentGroup) {
     subtitle: 'Tìm lỗi mạch bị hỏng & Thực hành mắc đồng hồ đo',
     schemeType: 'doctor',
     studentShirt: 0xffffff,
-    studentGender: 'male',
+    studentGender: 'female',
     actionData: {
       label: '🩺 Vào Khu Bác Sĩ Mạch (Tìm lỗi & Sửa chữa bí ẩn)',
       mode: 'doc',

@@ -4,10 +4,10 @@
    ========================================================================== */
 
 import { S, AppState } from './state.js';
-import { initSceneManager, getScene, getCamera, getRenderer, detectedGPU } from './world3d/sceneManager.js?v=25';
-import { buildClassroom, interactables3D, animatedElements3D } from './world3d/classroomBuilder.js?v=25';
-import { buildOutdoorScenery, updateOutdoorScenery } from './world3d/outdoorScenery.js?v=25';
-import { initControls3D, updateControls, flyToZone, registerControlsCallback } from './world3d/controls3d.js?v=25';
+import { initSceneManager, getScene, getCamera, getRenderer, detectedGPU } from './world3d/sceneManager.js?v=28';
+import { buildClassroom, interactables3D, animatedElements3D } from './world3d/classroomBuilder.js?v=28';
+import { buildOutdoorScenery, updateOutdoorScenery } from './world3d/outdoorScenery.js?v=28';
+import { initControls3D, updateControls, flyToZone, registerControlsCallback } from './world3d/controls3d.js?v=28';
 
 import { initRenderer2D, render2DFrame, resize2D, spawnBurst, getCanvasDimensions } from './studio2d/renderer2d.js';
 import { initInteraction2D, getWireStartState, getMousePos, registerInteractionCallbacks } from './studio2d/interaction2d.js';
