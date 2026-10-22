@@ -3,8 +3,8 @@
                                     Cửa sổ kính thật nhìn ra thiên nhiên
    ========================================================================== */
 
-import { ROOM_W, ROOM_D, ROOM_H, getCamera } from './sceneManager.js?v=28';
-import { createStudentCharacter } from './characterFactory.js?v=28';
+import { ROOM_W, ROOM_D, ROOM_H, getCamera } from './sceneManager.js?v=32';
+import { createStudentCharacter } from './characterFactory.js?v=32';
 
 export const interactables3D = [];
 export const animatedElements3D = [];
