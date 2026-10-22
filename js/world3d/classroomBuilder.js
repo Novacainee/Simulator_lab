@@ -3,8 +3,8 @@
                                     Cửa sổ kính thật nhìn ra thiên nhiên
    ========================================================================== */
 
-import { ROOM_W, ROOM_D, ROOM_H, getCamera } from './sceneManager.js?v=32';
-import { createStudentCharacter } from './characterFactory.js?v=32';
+import { ROOM_W, ROOM_D, ROOM_H, getCamera } from './sceneManager.js';
+import { createStudentCharacter } from './characterFactory.js';
 
 export const interactables3D = [];
 export const animatedElements3D = [];
@@ -633,41 +633,111 @@ function makeWallBoardTexture(title, subtitle, schemeType) {
   g2.lineWidth = 4;
 
   if (schemeType === 'sample1') {
-    // MẪU 1: MẠCH ĐƠN
-    const xL = 200, xR = 824, yT = 160, yB = 390;
-    // Dây khung ngoài
+    // THỬ THÁCH MÀN 1: 4 BỘ PHẬN CHƯA NỐI (PIN, ĐÈN, KHÓA K, DÂY NỐI)
+    // 1. Khung hộp mô tả nhiệm vụ bên trái (x: 50 .. 490, y: 130 .. 510)
+    g2.save();
+    g2.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    g2.strokeStyle = '#0284c7';
+    g2.lineWidth = 2.5;
     g2.beginPath();
-    // Cạnh trên (Pin ở giữa, Khóa K bên phải)
-    g2.moveTo(xL, yT); g2.lineTo(395, yT);
-    g2.moveTo(485, yT); g2.lineTo(620, yT);
-    g2.moveTo(706, yT); g2.lineTo(xR, yT);
-    // Cạnh phải
-    g2.lineTo(xR, yB);
-    // Cạnh dưới (Ampe kế bên phải, Đèn bên trái)
-    g2.lineTo(726, yB);
-    g2.moveTo(674, yB); g2.lineTo(538, yB);
-    g2.moveTo(482, yB); g2.lineTo(xL, yB);
-    // Cạnh trái
-    g2.lineTo(xL, yT);
+    g2.roundRect(50, 130, 440, 380, 14);
+    g2.fill();
     g2.stroke();
 
-    // Linh kiện quy ước chuẩn
-    drawBatterySym(440, yT, 'Pin 9V');
-    drawSwitchSym(663, yT, true, 'Khóa K (Đóng)');
-    drawAmmeterSym(700, yB);
-    drawBulbSym(510, yB, 'Đèn Đ (Sáng 9V)', true);
-    drawVoltmeterSym(510, 480, 482, yB, 538, yB);
+    // Tiêu đề khung nhiệm vụ
+    g2.fillStyle = '#38bdf8';
+    g2.font = '800 22px "Be Vietnam Pro", sans-serif';
+    g2.textAlign = 'left';
+    g2.fillText('📋 4 BỘ PHẬN THỬ THÁCH:', 70, 170);
 
-    // Mũi tên chiều dòng điện I từ cực dương (+) qua tải về cực âm (-)
-    drawArrow(200, 275, -Math.PI / 2);
-    drawArrow(550, yT, 0);
-    drawArrow(xR, 275, Math.PI / 2);
-    drawArrow(600, yB, Math.PI);
+    g2.font = '600 17px "Be Vietnam Pro", sans-serif';
+    g2.fillStyle = '#f8fafc';
+    g2.fillText('1. 🔋 Nguồn điện (Pin 9V): Cung cấp năng lượng', 70, 208);
+    g2.fillText('2. ⚡ Công tắc (Khóa K): Đóng / ngắt dòng điện', 70, 242);
+    g2.fillText('3. 💡 Bóng đèn: Tiêu thụ điện năng để phát sáng', 70, 276);
+    g2.fillText('4. 〰️ Dây dẫn điện: Nối các cực thành mạch kín', 70, 310);
 
-    // Chú thích quy ước chuẩn SGK KHTN
+    // Đường phân cách
+    g2.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+    g2.lineWidth = 1.5;
+    g2.beginPath();
+    g2.moveTo(70, 332); g2.lineTo(470, 332);
+    g2.stroke();
+
+    // Hướng dẫn mục tiêu
+    g2.fillStyle = '#fde047';
+    g2.font = '800 18px "Be Vietnam Pro", sans-serif';
+    g2.fillText('🎯 MỤC TIÊU & PHẦN THƯỞNG:', 70, 362);
+
+    g2.fillStyle = '#e2e8f0';
+    g2.font = '500 16px "Be Vietnam Pro", sans-serif';
+    g2.fillText('• Đấu nối 4 bộ phận tạo thành 1 vòng mạch kín.', 70, 394);
+    g2.fillText('• Đóng Khóa K sao cho bóng đèn phát sáng!', 70, 422);
+    g2.fillText('• Mở khóa bài trắc nghiệm công dụng 4 bộ phận.', 70, 450);
+
+    g2.fillStyle = '#4ade80';
+    g2.font = '700 16px "Be Vietnam Pro", sans-serif';
+    g2.fillText('👉 Nhấp vào bàn để vào phòng lab thực hành ngay!', 70, 488);
+    g2.restore();
+
+    // 2. Bên phải (x: 520 .. 970): Sơ đồ 4 bộ phận chưa lắp nối
+    g2.save();
+    g2.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    g2.strokeStyle = '#eab308';
+    g2.lineWidth = 2.5;
+    g2.beginPath();
+    g2.roundRect(520, 130, 450, 380, 14);
+    g2.fill();
+    g2.stroke();
+
+    g2.textAlign = 'center';
+    g2.fillStyle = '#fde047';
+    g2.font = '800 20px "Be Vietnam Pro", sans-serif';
+    g2.fillText('SƠ ĐỒ 4 BỘ PHẬN (CHƯA LẮP NỐI)', 745, 170);
+
+    // Vẽ Ký hiệu Pin 9V ở trên
+    drawBatterySym(640, 245, '1. Pin 9V');
+
+    // Vẽ Ký hiệu Khóa K mở ở bên phải
+    drawSwitchSym(850, 245, false, '2. Khóa K (Mở)');
+
+    // Vẽ Ký hiệu Bóng đèn ở dưới
+    drawBulbSym(745, 395, '3. Đèn tròn', false);
+
+    // Vẽ ký hiệu Dây nối (đường cong đứt nét màu xanh ngọc + vàng)
+    g2.setLineDash([8, 8]);
+    g2.strokeStyle = '#38bdf8';
+    g2.lineWidth = 3;
+
+    // Đường đứt nét từ Pin sang Khóa K
+    g2.beginPath();
+    g2.moveTo(680, 245);
+    g2.bezierCurveTo(730, 215, 770, 215, 810, 245);
+    g2.stroke();
+
+    // Đường đứt nét từ Khóa K xuống Đèn
+    g2.beginPath();
+    g2.moveTo(870, 265);
+    g2.bezierCurveTo(900, 335, 840, 385, 785, 395);
+    g2.stroke();
+
+    // Đường đứt nét từ Đèn về Pin
+    g2.beginPath();
+    g2.moveTo(705, 395);
+    g2.bezierCurveTo(620, 385, 580, 315, 600, 245);
+    g2.stroke();
+    g2.setLineDash([]);
+
+    // Mũi tên và nhãn Dây nối
+    g2.fillStyle = '#38bdf8';
+    g2.font = '700 16px "Be Vietnam Pro", sans-serif';
+    g2.fillText('4. Dây dẫn điện (Nối kín vòng)', 745, 475);
+    g2.restore();
+
+    // Chú thích đáy
     g2.fillStyle = '#67e8f9';
     g2.font = '700 17px "Be Vietnam Pro", sans-serif';
-    g2.fillText(' Quy ước: (+) Vạch dài mảnh | (−) Vạch ngắn đậm | (X) Bóng đèn | (A) Ampe kế nối tiếp | (V) Vôn kế song song', 512, 535);
+    g2.fillText(' Quy ước: (+) Vạch dài mảnh | (−) Vạch ngắn đậm | (X) Bóng đèn | /_ Khóa K mở', 512, 535);
 
   } else if (schemeType === 'sample2') {
     // MẪU 2: HAI ĐÈN NỐI TIẾP
@@ -992,6 +1062,50 @@ function build3DMeter(type = 'A', reading = '0.90 A') {
   return meterGroup;
 }
 
+function build3DWireBundle() {
+  const bundle = new THREE.Group();
+
+  // Khay nhựa đỡ cuộn dây màu xám đen
+  const trayGeo = new THREE.BoxGeometry(0.36, 0.02, 0.26);
+  const trayMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+  const tray = new THREE.Mesh(trayGeo, trayMat);
+  tray.position.y = 0.01;
+  tray.castShadow = true;
+  bundle.add(tray);
+
+  // 4 Cuộn dây dẫn đỏ, đen, xanh, vàng
+  const wireConfigs = [
+    { color: 0xef4444, r: 0.082, y: 0.032, rotZ: 0.1 },
+    { color: 0x18181b, r: 0.072, y: 0.042, rotZ: -0.15 },
+    { color: 0x38bdf8, r: 0.062, y: 0.052, rotZ: 0.2 },
+    { color: 0xfacc15, r: 0.052, y: 0.062, rotZ: -0.05 }
+  ];
+
+  wireConfigs.forEach(wc => {
+    const torusGeo = new THREE.TorusGeometry(wc.r, 0.009, 8, 24);
+    torusGeo.rotateX(Math.PI / 2);
+    const wireMat = new THREE.MeshStandardMaterial({ color: wc.color, roughness: 0.4 });
+    const wireMesh = new THREE.Mesh(torusGeo, wireMat);
+    wireMesh.position.set(0, wc.y, 0);
+    wireMesh.rotation.z = wc.rotZ;
+    wireMesh.castShadow = true;
+    bundle.add(wireMesh);
+
+    // Chốt cắm / kẹp kim loại mạ đồng ở hai đầu dây
+    [-wc.r, wc.r].forEach((pos, idx) => {
+      const jack = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.006, 0.006, 0.03, 8),
+        new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.8, roughness: 0.2 })
+      );
+      jack.rotation.z = Math.PI / 2;
+      jack.position.set(pos + (idx === 0 ? -0.015 : 0.015), wc.y, (idx === 0 ? 0.025 : -0.025));
+      bundle.add(jack);
+    });
+  });
+
+  return bundle;
+}
+
 function build3DWireCurve(p1, p2, color = 0xef4444, archY = 0.03) {
   const midX = (p1.x + p2.x) / 2;
   const midZ = (p1.z + p2.z) / 2;
@@ -1033,39 +1147,28 @@ function createExperimentStation({ x, z, rotY, title, subtitle, schemeType, acti
   const tableY = 1.0; // Mặt bàn ở y = 1.0
 
   if (schemeType === 'sample1') {
-    // MẪU 1: PIN 9V + KHÓA K + AMPE KẾ + ĐÈN Đ + VÔN KẾ ĐO ĐÈN
+    // THỬ THÁCH 1: 4 BỘ PHẬN ĐẶT RỜI NHAU TRÊN BÀN (CHƯA LẮP NỐI)
+    // 1. Nguồn Pin 9V
     const bat = build3DBatteryPack('9V');
     bat.position.set(-0.65, tableY, -0.15);
     group.add(bat);
 
-    const sw = build3DKnifeSwitch(true);
-    sw.position.set(-0.15, tableY, -0.22);
+    // 2. Công tắc (Khóa K mở)
+    const sw = build3DKnifeSwitch(false);
+    sw.position.set(-0.10, tableY, -0.15);
     group.add(sw);
 
-    const am = build3DMeter('A', '0.90 A');
-    am.position.set(0.48, tableY, -0.20);
-    group.add(am);
-
-    const bulb = build3DLightBulb('Đ', true, 1.0);
-    bulb.position.set(0.38, tableY, 0.22);
+    // 3. Bóng đèn tròn (Chưa sáng, chưa cắm dây)
+    const bulb = build3DLightBulb('Đ', false, 0.0);
+    bulb.position.set(0.45, tableY, -0.15);
     group.add(bulb);
 
-    const vm = build3DMeter('V', '9.0 V');
-    vm.position.set(-0.35, tableY, 0.22);
-    group.add(vm);
+    // 4. Cuộn dây dẫn điện trên khay chuyên dụng
+    const wireBundle = build3DWireBundle();
+    wireBundle.position.set(-0.08, tableY, 0.22);
+    group.add(wireBundle);
 
-    // Dây dẫn nối mạch 3D
-    // Dây Đỏ: Cực dương Pin -> Khóa K
-    group.add(build3DWireCurve({ x: -0.73, y: tableY + 0.22, z: -0.15 }, { x: -0.24, y: tableY + 0.065, z: -0.22 }, 0xef4444));
-    // Dây Đỏ: Khóa K -> Cực dương Ampe kế
-    group.add(build3DWireCurve({ x: -0.06, y: tableY + 0.065, z: -0.22 }, { x: 0.48, y: tableY + 0.04, z: -0.10 }, 0xef4444));
-    // Dây Vàng: Cực âm Ampe kế -> Đui đèn (ốc 1)
-    group.add(build3DWireCurve({ x: 0.41, y: tableY + 0.04, z: -0.10 }, { x: 0.27, y: tableY + 0.05, z: 0.22 }, 0xfacc15));
-    // Dây Đen: Đui đèn (ốc 2) -> Cực âm Pin
-    group.add(build3DWireCurve({ x: 0.49, y: tableY + 0.05, z: 0.22 }, { x: -0.57, y: tableY + 0.215, z: -0.15 }, 0x18181b, 0.06));
-    // 2 Que đo Vôn kế nối song song với 2 ốc đui đèn
-    group.add(build3DWireCurve({ x: -0.35, y: tableY + 0.04, z: 0.32 }, { x: 0.27, y: tableY + 0.05, z: 0.22 }, 0xef4444, 0.02));
-    group.add(build3DWireCurve({ x: -0.42, y: tableY + 0.04, z: 0.32 }, { x: 0.49, y: tableY + 0.05, z: 0.22 }, 0x18181b, 0.03));
+    // Lưu ý: Tuyệt đối không cắm dây nối giữa các thiết bị! Không có Ampe kế hay Vôn kế!
 
   } else if (schemeType === 'sample2') {
     // MẪU 2: PIN 12V + KHÓA K + 2 BÓNG ĐÈN NỐI TIẾP (MỖI ĐÈN 6V)
@@ -1200,6 +1303,22 @@ function createExperimentStation({ x, z, rotY, title, subtitle, schemeType, acti
   screenMesh.userData = actionData;
   interactables3D.push(topMesh, screenMesh);
 
+  // Cho phép bấm vào bất kỳ linh kiện nào trên bàn để mở phòng lab
+  group.traverse(child => {
+    if (child.isMesh && child !== topMesh && child !== screenMesh) {
+      let p = child;
+      let isStudent = false;
+      while (p) {
+        if (p === student) { isStudent = true; break; }
+        p = p.parent;
+      }
+      if (!isStudent) {
+        child.userData = actionData;
+        interactables3D.push(child);
+      }
+    }
+  });
+
   return group;
 }
 
@@ -1250,19 +1369,18 @@ function makeWallTextSign(mainText, subText, width = 4.2, height = 1.2) {
 }
 
 function buildSampleStations(parentGroup) {
-  // MẪU 1: MẠCH ĐIỆN ĐƠN (Gần tường trái cửa sổ)
+  // THỬ THÁCH 1: LẮP MẠCH ĐIỆN ĐƠN GIẢN (Gần tường trái cửa sổ)
   const st1 = createExperimentStation({
     x: -9.5, z: -1.5, rotY: Math.PI / 2,
-    title: 'MẪU 1: MẠCH ĐIỆN ĐƠN',
-    subtitle: 'Pin 9V + Khóa K + Đèn tròn + Vôn kế',
+    title: 'THỬ THÁCH 1: LẮP MẠCH ĐIỆN ĐƠN GIẢN',
+    subtitle: 'Nhiệm vụ: Pin + Đèn + Khóa K + Dây nối (Bóng đèn sáng)',
     schemeType: 'sample1',
     studentShirt: 0xffffff, // Áo trắng đồng phục
     studentGender: 'male',
     actionData: {
-      label: '👁️ Xem Mạch Mẫu 1 (Mạch đơn – Chỉ quan sát & Đo thử)',
-      mode: 'free',
-      preset: 0,
-      readOnly: true
+      label: '🎯 Bắt đầu Thử thách 1: Lắp mạch điện đơn giản (4 Bộ phận)',
+      mode: 'challenge1',
+      readOnly: false
     }
   });
   parentGroup.add(st1);

@@ -4,10 +4,10 @@
    ========================================================================== */
 
 import { AppState } from '../state.js';
-import { interactables3D } from './classroomBuilder.js?v=28';
-import { ZONE_TARGETS } from '../data/challenges.js?v=28';
+import { interactables3D } from './classroomBuilder.js';
+import { ZONE_TARGETS } from '../data/challenges.js';
 import { sfxClick, sfxWin } from '../audio/soundEngine.js';
-import { ROOM_W, ROOM_D } from './sceneManager.js?v=28';
+import { ROOM_W, ROOM_D } from './sceneManager.js';
 
 const $ = id => document.getElementById(id);
 

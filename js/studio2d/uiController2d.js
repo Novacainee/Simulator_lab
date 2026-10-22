@@ -3,12 +3,12 @@
                                    Ghim gợi ý, Trộn đáp án Quiz & UI
    ========================================================================== */
 
-import { S, AppState, comps, wires, COMP_META, deleteComp, makeComp } from '../state.js';
+import { S, AppState, comps, wires, COMP_META, deleteComp, makeComp, addWire } from '../state.js';
 import { solveCircuit, fmt, cleanZero } from '../physics/mnaSolver.js';
-import { BUILD_TASKS, DOC_TASKS, SYM_QUIZ, shuffleQuizOptions, loadPresetCircuit } from '../data/challenges.js';
+import { BUILD_TASKS, DOC_TASKS, SYM_QUIZ, CHALLENGE_1_DATA, COMPONENT_FUNCTION_QUIZ, shuffleQuizOptions, loadPresetCircuit } from '../data/challenges.js';
 import { sfxClick, sfxZap, sfxWin } from '../audio/soundEngine.js';
 import { resetProbes, rotateComp, toggleSwitch } from './interaction2d.js';
-import { getCanvasDimensions } from './renderer2d.js';
+import { getCanvasDimensions, spawnBurst } from './renderer2d.js';
 
 const $ = id => document.getElementById(id);
 
@@ -49,6 +49,23 @@ export function sayThrottled(txt, mood = '', ms = 2200) {
 }
 
 export function diagnoseAndSpeak() {
+  if (AppState.gmMode === 'challenge1') {
+    const lit = comps.filter(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+    if (lit.length >= 1 && !S.shortCircuit) {
+      if (!AppState.challenge1Passed) {
+        AppState.challenge1Passed = true;
+        sfxWin();
+        spawnBurst(lit[0].x, lit[0].y);
+        say('🎉 <b>Bóng đèn đã phát sáng rực rỡ!</b><br>Em đã lắp thành công mạch điện từ 4 bộ phận. Hãy bấm nút <b>"📝 VÀO BÀI TRẮC NGHIỆM CÔNG DỤNG"</b> ở bảng bên phải để tiếp tục nhé!', 'ok');
+      }
+    } else if (S.shortCircuit) {
+      sfxZap();
+      sayThrottled('🔥 <b>ĐOẢN MẠCH!</b> Dây nối đang nối trực tiếp 2 cực của Pin làm chập nguồn, hãy cắt bớt dây đi tắt nhé!', 'warn', 1800);
+    }
+    renderTaskCard(false);
+    return;
+  }
+
   if (S.docMysteryActive) {
     const anyLit = comps.some(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.1) && !S.shortCircuit;
     if (anyLit) {
@@ -86,6 +103,16 @@ export function updateHUD() {
   if (!pill) return;
   const cutTxt = S.cutMode ? `<b style="color:#ff6b57">[✂️ Đang bật Cắt dây]</b> · ` : '';
   const countTxt = `${comps.length} thiết bị · ${wires.length} dây nối`;
+
+  if (AppState.gmMode === 'challenge1') {
+    const lit = comps.some(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+    pill.innerHTML = cutTxt + (lit
+      ? `<b style="color:#4cf08a">✨ Đèn đã sáng! Hãy vào Bài trắc nghiệm</b> · ${countTxt}`
+      : (S.shortCircuit
+        ? `<b style="color:#ff6b57">🔥 ĐANG ĐOẢN MẠCH NGUỒN!</b> · ${countTxt}`
+        : `<b style="color:#f59e0b">🎯 Thử thách 1: Lắp mạch 4 bộ phận</b> · ${countTxt}`));
+    return;
+  }
 
   if (S.readOnly) {
     pill.innerHTML = `<b style="color:#f59e0b">👁️ ĐANG XEM MẠCH MẪU</b> · ${countTxt}`;
@@ -313,7 +340,93 @@ export function renderTaskCard(reshuffle = true) {
   const scoreLbl = $('scoreLbl');
   if (scoreLbl) scoreLbl.textContent = `${AppState.totalScore} điểm`;
 
-  if (AppState.gmMode === 'build') {
+  if (AppState.gmMode === 'challenge1') {
+    $('taskHeaderTitle').textContent = '🎯 Thử thách Màn 1';
+    btns.style.display = 'flex';
+    hintBtn.style.display = 'inline-flex';
+    hintBtn.textContent = '💡 Gợi ý lắp';
+
+    const hasBattery = comps.some(c => c.type === 'battery');
+    const hasSwitch = comps.some(c => c.type === 'switch');
+    const hasClosedSwitch = comps.some(c => c.type === 'switch' && c.closed);
+    const litBulb = comps.find(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+    const isLit = Boolean(litBulb);
+    const wireCount = wires.length;
+
+    let partsScore = 0;
+    if (hasBattery) partsScore++;
+    if (hasSwitch) partsScore++;
+    if (wireCount >= 2) partsScore++;
+    if (isLit) partsScore++;
+
+    const quizBtnHTML = isLit ? `
+      <div id="quizActionWrap" style="margin-top:12px">
+        <button class="btn success pulse-gold" id="openQuizBtn" style="width:100%;padding:11px 10px;font-weight:800;font-size:.84rem;justify-content:center;border-radius:10px;cursor:pointer">
+          📝 VÀO BÀI TRẮC NGHIỆM CÔNG DỤNG (4 CÂU)
+        </button>
+      </div>
+    ` : `
+      <div style="margin-top:10px;font-size:.73rem;color:var(--muted);text-align:center">
+        ⚡ Nối kín mạch & đóng công tắc cho đèn sáng để mở bài trắc nghiệm!
+        <div style="margin-top:6px">
+          <button class="btn" id="autoWireChallenge1Btn" style="font-size:.72rem;padding:4px 10px;margin:0 auto;background:#f1f5f9;color:#334155;border:1px dashed #94a3b8">
+            ⚡ Hoặc bấm: Nối dây mẫu nhanh
+          </button>
+        </div>
+      </div>
+    `;
+
+    body.innerHTML = `
+      <div class="task-box" style="border-left-color:#f59e0b">
+        <h4 style="color:#b45309">${CHALLENGE_1_DATA.title}</h4>
+        <p style="margin:4px 0 8px 0">${CHALLENGE_1_DATA.desc}</p>
+        
+        <div class="challenge-checklist">
+          <div class="chk-item ${hasBattery ? 'done' : ''}">
+            <span>🔋 <b>1. Nguồn Pin 9V:</b> ${hasBattery ? 'Đã có trên bàn' : 'Thiếu pin'}</span>
+          </div>
+          <div class="chk-item ${hasSwitch ? (hasClosedSwitch ? 'done-active' : 'done') : ''}">
+            <span>⚡ <b>2. Công tắc:</b> ${hasSwitch ? (hasClosedSwitch ? 'Đã đóng kín (Mạch kín)' : 'Đang mở (Nhấp để ĐÓNG)') : 'Thiếu công tắc'}</span>
+          </div>
+          <div class="chk-item ${wireCount >= 2 ? 'done' : ''}">
+            <span>〰️ <b>3. Dây dẫn điện:</b> ${wireCount >= 2 ? `Đã nối ${wireCount} sợi dây` : `Cần nối thêm dây (${wireCount}/2+)`}</span>
+          </div>
+          <div class="chk-item ${isLit ? 'done-lit' : ''}">
+            <span>💡 <b>4. Bóng đèn:</b> ${isLit ? '✨ ĐÃ SÁNG RỰC RỠ!' : 'Chưa sáng (cần mạch kín)'}</span>
+          </div>
+        </div>
+        ${quizBtnHTML}
+      </div>
+    `;
+
+    $('progBar').style.width = `${(partsScore / 4) * 100}%`;
+    $('progLbl').textContent = isLit ? 'Hoàn thành lắp mạch! Đã mở trắc nghiệm' : `Tiến độ: ${partsScore}/4 bước`;
+
+    const autoWireBtn = $('autoWireChallenge1Btn');
+    if (autoWireBtn) {
+      autoWireBtn.onclick = () => {
+        const bat = comps.find(c => c.type === 'battery');
+        const sw = comps.find(c => c.type === 'switch');
+        const blb = comps.find(c => c.type === 'bulb');
+        if (bat && sw && blb) {
+          wires.length = 0;
+          addWire(bat.id, 1, sw.id, 0);
+          addWire(sw.id, 1, blb.id, 1);
+          addWire(blb.id, 0, bat.id, 0);
+          sw.closed = true;
+          sfxWin();
+          solveCircuit(true);
+        }
+      };
+    }
+
+    const openQuizBtn = $('openQuizBtn');
+    if (openQuizBtn) {
+      openQuizBtn.onclick = () => {
+        openChallenge1Quiz();
+      };
+    }
+  } else if (AppState.gmMode === 'build') {
     $('taskHeaderTitle').textContent = '🎯 Thử thách Đo & Lắp';
     btns.style.display = 'flex';
     hintBtn.style.display = 'none';
@@ -417,13 +530,18 @@ export function setReadOnlyMode(readOnly) {
 export function switchStudioMode(m) {
   AppState.gmMode = m;
   AppState.unlockedHints = 0;
+  if (m === 'challenge1') {
+    AppState.challenge1Passed = false;
+  }
 
   // Cập nhật huy hiệu chức năng chuyên biệt theo trạm Kiosk 3D
   const badgeWrap = $('stationBadge');
   const badgeTxt = $('stationBadgeTxt');
   if (badgeWrap && badgeTxt) {
     badgeWrap.className = `station-badge mode-${m}`;
-    if (m === 'build') {
+    if (m === 'challenge1') {
+      badgeTxt.innerHTML = '🎯 <b>Thử Thách Màn 1:</b> Lắp Mạch Điện Đơn Giản';
+    } else if (m === 'build') {
       badgeTxt.innerHTML = '🎯 <b>Trạm Kiosk:</b> Thử Thách Đo & Lắp Mạch';
     } else if (m === 'sym') {
       badgeTxt.innerHTML = '🏆 <b>Trạm Kiosk:</b> Đố Vui Ký Hiệu & Linh Kiện';
@@ -436,6 +554,27 @@ export function switchStudioMode(m) {
     }
   }
 
+  // Lọc khay linh kiện: Trong challenge1 chỉ hiển thị đúng 4 bộ phận
+  const drawerBtns = document.querySelectorAll('.comp-drawer [data-add]');
+  const meterCard = document.querySelector('.right-dock .side-card:first-child');
+
+  if (m === 'challenge1') {
+    drawerBtns.forEach(btn => {
+      const type = btn.dataset.add;
+      if (['wire_seg', 'battery', 'bulb', 'switch'].includes(type)) {
+        btn.style.display = '';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+    if (meterCard) meterCard.style.display = 'none';
+  } else {
+    drawerBtns.forEach(btn => {
+      btn.style.display = '';
+    });
+    if (meterCard) meterCard.style.display = '';
+  }
+
   // Ẩn nút "Đổi mạch mẫu" khi đang ở các Kiosk thử thách / đố vui / bác sĩ để học sinh tập trung làm bài
   const presetBtn = $('presetBtn');
   if (presetBtn) {
@@ -446,7 +585,11 @@ export function switchStudioMode(m) {
 
   const { W, H } = getCanvasDimensions();
 
-  if (AppState.gmMode === 'build') {
+  if (AppState.gmMode === 'challenge1') {
+    setReadOnlyMode(false);
+    CHALLENGE_1_DATA.setup(W, H);
+    say('🎯 <b>Thử Thách Màn 1:</b> Dùng <b>Dây nối</b> liên kết <b>Pin 9V</b>, <b>Công tắc K</b> và <b>Bóng đèn</b> thành mạch kín. Sau đó đóng công tắc để đèn sáng!');
+  } else if (AppState.gmMode === 'build') {
     setReadOnlyMode(false);
     BUILD_TASKS[AppState.buildLv].setup(W, H);
     say('🎯 <b>Chế độ Đo & Lắp:</b> Hãy hoàn thành yêu cầu trong thẻ nhiệm vụ bên phải rồi bấm <b>"✅ Kiểm tra"</b> nhé!');
@@ -530,8 +673,14 @@ export function initUIEventListeners() {
   if (loadTaskBtn) {
     loadTaskBtn.onclick = () => {
       const { W, H } = getCanvasDimensions();
-      if (AppState.gmMode === 'build') BUILD_TASKS[AppState.buildLv].setup(W, H);
-      else if (AppState.gmMode === 'doc') {
+      if (AppState.gmMode === 'challenge1') {
+        AppState.challenge1Passed = false;
+        CHALLENGE_1_DATA.setup(W, H);
+        renderTaskCard(false);
+        say('🔄 <b>Đã tải lại 4 bộ phận ban đầu.</b> Hãy dùng Dây nối lắp thành mạch kín rồi bấm đóng công tắc nhé!');
+      } else if (AppState.gmMode === 'build') {
+        BUILD_TASKS[AppState.buildLv].setup(W, H);
+      } else if (AppState.gmMode === 'doc') {
         DOC_TASKS[AppState.docLv].setup(W, H);
         renderTaskCard(false);
       }
@@ -542,6 +691,11 @@ export function initUIEventListeners() {
   const hintTaskBtn = $('hintTaskBtn');
   if (hintTaskBtn) {
     hintTaskBtn.onclick = () => {
+      if (AppState.gmMode === 'challenge1') {
+        sfxClick(720);
+        say('💡 <b>Gợi ý Thử Thách 1:</b><br>1. Kéo dây nối từ cực (+) Pin sang 1 đầu Công tắc.<br>2. Kéo dây nối từ đầu còn lại của Công tắc sang chốt dưới Đèn.<br>3. Kéo dây nối từ chốt bên hông Đèn về cực (-) Pin.<br>4. Nhấp vào Công tắc để <b>ĐÓNG MẠCH</b> làm bóng đèn sáng!');
+        return;
+      }
       if (AppState.gmMode !== 'doc') return;
       const t = DOC_TASKS[AppState.docLv];
       if (AppState.unlockedHints < t.hints.length) {
@@ -561,6 +715,20 @@ export function initUIEventListeners() {
   const checkTaskBtn = $('checkTaskBtn');
   if (checkTaskBtn) {
     checkTaskBtn.onclick = () => {
+      if (AppState.gmMode === 'challenge1') {
+        const res = CHALLENGE_1_DATA.check();
+        if (res.ok) {
+          sfxWin();
+          AppState.totalScore += 50;
+          say(res.msg + '<br>👉 Hãy bấm nút <b>"📝 VÀO BÀI TRẮC NGHIỆM CÔNG DỤNG"</b> để thử thách 4 câu hỏi lý thuyết!', 'ok');
+          renderTaskCard(false);
+        } else {
+          sfxClick(220);
+          say(res.msg, 'warn');
+          renderTaskCard(false);
+        }
+        return;
+      }
       const list = AppState.gmMode === 'build' ? BUILD_TASKS : DOC_TASKS;
       const idx = AppState.gmMode === 'build' ? AppState.buildLv : AppState.docLv;
       const res = list[idx].check();
@@ -584,6 +752,11 @@ export function initUIEventListeners() {
         say(res.msg, 'warn');
       }
     };
+  }
+
+  const closeQuizBtn = $('closeQuizModalBtn');
+  if (closeQuizBtn) {
+    closeQuizBtn.onclick = closeChallenge1Quiz;
   }
 
   // Quick switch from Read-Only to Free Lab
@@ -610,4 +783,169 @@ export function initUIEventListeners() {
       updateInspector();
     };
   });
+}
+
+// ==========================================================================
+// ĐIỀU KHIỂN BÀI TRẮC NGHIỆM CÔNG DỤNG 4 BỘ PHẬN THỬ THÁCH MÀN 1
+// ==========================================================================
+let currentQuizIdx = 0;
+let quizUserScore = 0;
+let quizAnswered = false;
+
+export function openChallenge1Quiz() {
+  const modal = $('challenge1QuizModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  currentQuizIdx = 0;
+  quizUserScore = 0;
+  quizAnswered = false;
+  sfxClick(600);
+  renderQuizQuestion(0);
+}
+
+export function closeChallenge1Quiz() {
+  const modal = $('challenge1QuizModal');
+  if (modal) modal.style.display = 'none';
+  sfxClick(350);
+}
+
+export function renderQuizQuestion(idx) {
+  const container = $('quizModalContent');
+  if (!container) return;
+  const q = COMPONENT_FUNCTION_QUIZ[idx];
+  if (!q) {
+    renderQuizSummary();
+    return;
+  }
+  quizAnswered = false;
+
+  const total = COMPONENT_FUNCTION_QUIZ.length;
+  const progressPct = ((idx + 1) / total) * 100;
+
+  container.innerHTML = `
+    <div class="quiz-q-progress">
+      <div class="quiz-q-meta">
+        <span class="quiz-q-count">Câu hỏi ${idx + 1}/${total}</span>
+        <span class="quiz-q-component">${q.icon} ${q.partName}</span>
+      </div>
+      <div class="prog-bar" style="margin-top:6px;height:5px"><i style="width:${progressPct}%;background:linear-gradient(90deg, #38bdf8, #10b981)"></i></div>
+    </div>
+    <div class="quiz-q-title">${q.question}</div>
+    <div class="quiz-options-list" id="quizOptionsList">
+      ${q.options.map((opt, i) => `
+        <button class="quiz-option-btn" data-opt-idx="${i}">
+          <span class="opt-bullet">${String.fromCharCode(65 + i)}</span>
+          <span class="opt-text">${opt.text.replace(/^[A-D]\.\s*/, '')}</span>
+        </button>
+      `).join('')}
+    </div>
+    <div id="quizFeedbackBox" style="display:none"></div>
+    <div class="quiz-q-actions" id="quizActionBox" style="display:none">
+      <button class="btn success" id="nextQuizBtn" style="padding:10px 20px;font-weight:700">
+        ${idx + 1 < total ? 'Câu tiếp theo ➔' : 'Xem kết quả tổng kết 🏆'}
+      </button>
+    </div>
+  `;
+
+  // Gắn sự kiện chọn đáp án
+  const optionBtns = container.querySelectorAll('.quiz-option-btn');
+  optionBtns.forEach(btn => {
+    btn.onclick = () => {
+      if (quizAnswered) return;
+      quizAnswered = true;
+      const optIdx = parseInt(btn.dataset.optIdx, 10);
+      const chosen = q.options[optIdx];
+      const fbBox = $('quizFeedbackBox');
+      const actBox = $('quizActionBox');
+
+      optionBtns.forEach((b, i) => {
+        b.disabled = true;
+        if (q.options[i].isCorrect) {
+          b.classList.add('correct');
+        }
+      });
+
+      if (chosen.isCorrect) {
+        btn.classList.add('correct');
+        quizUserScore++;
+        sfxWin();
+        if (fbBox) {
+          fbBox.className = 'quiz-feedback-box correct';
+          fbBox.innerHTML = `<b>🎉 Chính xác!</b><br>${q.explain}`;
+          fbBox.style.display = 'block';
+        }
+      } else {
+        btn.classList.add('wrong');
+        sfxZap();
+        if (fbBox) {
+          fbBox.className = 'quiz-feedback-box wrong';
+          fbBox.innerHTML = `<b>❌ Chưa chính xác!</b><br>${q.explain}`;
+          fbBox.style.display = 'block';
+        }
+      }
+
+      if (actBox) actBox.style.display = 'flex';
+      const nextBtn = $('nextQuizBtn');
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          sfxClick(550);
+          if (idx + 1 < total) {
+            renderQuizQuestion(idx + 1);
+          } else {
+            renderQuizSummary();
+          }
+        };
+      }
+    };
+  });
+}
+
+export function renderQuizSummary() {
+  const container = $('quizModalContent');
+  if (!container) return;
+  const total = COMPONENT_FUNCTION_QUIZ.length;
+  const pct = Math.round((quizUserScore / total) * 100);
+  const isPerfect = quizUserScore === total;
+
+  if (isPerfect) sfxWin();
+
+  container.innerHTML = `
+    <div class="quiz-summary-wrap">
+      <div class="summary-trophy">${isPerfect ? '🏆' : '🌟'}</div>
+      <div class="summary-title">${isPerfect ? 'Xuất Sắc! Bạn Đã Làm Chủ Kiến Thức Màn 1' : 'Hoàn Thành Bài Trắc Nghiệm Màn 1!'}</div>
+      <div class="summary-score">Kết quả đạt được: <b>${quizUserScore}/${total} câu đúng</b> (${pct}%)</div>
+      
+      <div class="summary-review-card">
+        <h4>📋 TỔNG KẾT CÔNG DỤNG 4 BỘ PHẬN TRONG MẠCH ĐIỆN:</h4>
+        <ul>
+          <li><b>🔋 1. Nguồn điện (Pin 9V):</b> Cung cấp năng lượng điện và duy trì dòng điện chạy trong mạch kín liên tục.</li>
+          <li><b>💡 2. Bóng đèn:</b> Thiết bị tiêu thụ điện năng (tải), biến đổi điện năng thành quang năng (ánh sáng) và nhiệt.</li>
+          <li><b>⚡ 3. Công tắc (Khóa K):</b> Dụng cụ đóng/ngắt mạch chủ động, cho phép hoặc ngắt dòng điện một cách an toàn.</li>
+          <li><b>〰️ 4. Dây dẫn điện:</b> Lõi kim loại dẫn truyền dòng điện, kết nối các linh kiện thành một vòng mạch kín.</li>
+        </ul>
+      </div>
+
+      <div class="summary-actions">
+        <button class="btn accent" id="retryQuizBtn" style="padding:10px 18px;font-weight:700">🔄 Làm lại trắc nghiệm</button>
+        <button class="btn success" id="finishBack3dBtn" style="padding:10px 22px;font-weight:700">🚶 Hoàn thành & Quay lại Phòng 3D</button>
+      </div>
+    </div>
+  `;
+
+  const retryBtn = $('retryQuizBtn');
+  if (retryBtn) {
+    retryBtn.onclick = () => {
+      sfxClick(600);
+      renderQuizQuestion(0);
+    };
+  }
+
+  const back3dBtn = $('finishBack3dBtn');
+  if (back3dBtn) {
+    back3dBtn.onclick = () => {
+      closeChallenge1Quiz();
+      if (window.closeStudio) window.closeStudio();
+      if (window.flyToZone) window.flyToZone('sample1');
+    };
+  }
 }

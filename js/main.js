@@ -4,10 +4,10 @@
    ========================================================================== */
 
 import { S, AppState } from './state.js';
-import { initSceneManager, getScene, getCamera, getRenderer, detectedGPU } from './world3d/sceneManager.js?v=32';
-import { buildClassroom, interactables3D, animatedElements3D } from './world3d/classroomBuilder.js?v=32';
-import { buildOutdoorScenery, updateOutdoorScenery } from './world3d/outdoorScenery.js?v=32';
-import { initControls3D, updateControls, flyToZone, registerControlsCallback } from './world3d/controls3d.js?v=32';
+import { initSceneManager, getScene, getCamera, getRenderer, detectedGPU } from './world3d/sceneManager.js';
+import { buildClassroom, interactables3D, animatedElements3D } from './world3d/classroomBuilder.js';
+import { buildOutdoorScenery, updateOutdoorScenery } from './world3d/outdoorScenery.js';
+import { initControls3D, updateControls, flyToZone, registerControlsCallback } from './world3d/controls3d.js';
 
 import { initRenderer2D, render2DFrame, resize2D, spawnBurst, getCanvasDimensions } from './studio2d/renderer2d.js';
 import { initInteraction2D, getWireStartState, getMousePos, registerInteractionCallbacks } from './studio2d/interaction2d.js';
@@ -40,13 +40,16 @@ export function openStudio(mode = 'free', presetIdx = null, readOnly = false) {
   resize2D();
   setReadOnlyMode(readOnly);
 
-  if (presetIdx !== null && presetIdx !== undefined) {
-    S.presetIdx = presetIdx;
-    const { W, H } = getCanvasDimensions();
-    loadPresetCircuit(presetIdx, W, H, say);
+  if (mode === 'challenge1') {
+    switchStudioMode('challenge1');
+  } else {
+    if (presetIdx !== null && presetIdx !== undefined) {
+      S.presetIdx = presetIdx;
+      const { W, H } = getCanvasDimensions();
+      loadPresetCircuit(presetIdx, W, H, say);
+    }
+    switchStudioMode(mode);
   }
-
-  switchStudioMode(mode);
 }
 
 export function closeStudio() {
@@ -88,6 +91,9 @@ function initApp() {
       if (triggerFeedback) diagnoseAndSpeak();
       updateHUD();
       updateInspector();
+      if (AppState.gmMode === 'challenge1') {
+        renderTaskCard(false);
+      }
     },
     spawnBurst,
     sayMessage: say

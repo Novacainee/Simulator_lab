@@ -8,7 +8,7 @@ import { solveCircuit, fmt } from '../physics/mnaSolver.js';
 
 export const ZONE_TARGETS = {
   samples:     { x: -6.0, z: -1.5, yaw: 1.57,  pitch: 0.06,  name: 'Khu Xem Mạch Mẫu' },
-  sample1:     { x: -6.0, z: -1.5, yaw: 1.57,  pitch: 0.06,  name: 'Mẫu 1: Mạch Đơn' },
+  sample1:     { x: -6.0, z: -1.5, yaw: 1.57,  pitch: 0.06,  name: 'Thử Thách 1: Lắp Mạch Đơn' },
   sample2:     { x: -4.2, z: -4.6, yaw: 0.00,  pitch: 0.08,  name: 'Mẫu 2: Hai Đèn Nối Tiếp' },
   sample3:     { x: 3.8,  z: -4.6, yaw: 0.00,  pitch: 0.08,  name: 'Mẫu 3: Hai Đèn Song Song' },
   doctor:      { x: 6.0,  z: -3.2, yaw: -1.57, pitch: 0.06,  name: 'Khu Bác Sĩ Mạch' },
@@ -302,3 +302,94 @@ export function shuffleQuizOptions(qObj) {
   }
   return arr;
 }
+
+// ==========================================================================
+// THỬ THÁCH MÀN 1: LẮP MẠCH ĐIỆN ĐƠN GIẢN TỪ 4 BỘ PHẬN & BÀI TRẮC NGHIỆM
+// ==========================================================================
+export const CHALLENGE_1_DATA = {
+  title: 'Thử Thách Màn 1: Thắp Sáng Bóng Đèn',
+  desc: 'Hãy sử dụng <b>Dây nối</b> để liên kết 4 bộ phận: <b>Nguồn Pin 9V</b>, <b>Công tắc K</b> và <b>Bóng đèn</b> thành một mạch điện kín. Sau đó bấm đóng <b>Công tắc K</b> sao cho bóng đèn phát sáng!',
+  setup: (W, H) => {
+    clearCompsAndWires();
+    const cx = W * 0.44;
+    const cy = H * 0.48;
+    // 3 linh kiện đặt rời rạc trên bàn, chưa nối dây (Dây nối là bộ phận thứ 4)
+    makeComp('battery', cx - 180, cy - 80, { v: 9 });
+    makeComp('switch',  cx + 140, cy - 80, { closed: false });
+    makeComp('bulb',    cx,       cy + 90, { r: 10 });
+    solveCircuit(false);
+  },
+  check: () => {
+    const lit = comps.filter(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+    if (S.shortCircuit) {
+      return { ok: false, msg: '🚨 Mạch đang bị đoản mạch trực tiếp hai cực của Pin! Hãy ngắt hoặc sửa lại đường dây nối.' };
+    }
+    if (lit.length >= 1) {
+      return { ok: true, msg: '🎉 Xuất sắc! Mạch điện kín đã hoàn thành và bóng đèn đã phát sáng rực rỡ!' };
+    }
+    const sw = comps.find(c => c.type === 'switch');
+    if (sw && !sw.closed) {
+      return { ok: false, msg: '💡 Hãy bấm vào Công tắc (Khóa K) để ĐÓNG MẠCH cho dòng điện chạy qua nhé!' };
+    }
+    return { ok: false, msg: '💡 Đèn chưa sáng! Hãy kéo Dây nối giữa các chốt tròn của Pin 9V, Công tắc và Bóng đèn thành một vòng kín liên tục.' };
+  }
+};
+
+export const COMPONENT_FUNCTION_QUIZ = [
+  {
+    id: 1,
+    partName: 'Nguồn điện (Pin 9V)',
+    icon: '🔋',
+    badge: 'Bộ phận 1/4',
+    question: 'Trong mạch điện, nguồn điện (Pin) có công dụng chính là gì?',
+    options: [
+      { text: 'A. Tiêu thụ năng lượng điện và phát ra ánh sáng', isCorrect: false },
+      { text: 'B. Cung cấp năng lượng điện và duy trì dòng điện chạy trong mạch kín', isCorrect: true },
+      { text: 'C. Đóng hoặc ngắt mạch điện một cách an toàn', isCorrect: false },
+      { text: 'D. Dẫn truyền dòng điện đi từ thiết bị này sang thiết bị khác', isCorrect: false }
+    ],
+    explain: '💡 <b>Giải thích:</b> Nguồn điện (pin, ắc quy...) có nhiệm vụ cung cấp và duy trì năng lượng điện (hiệu điện thế) để tạo ra dòng điện chạy trong mạch kín.'
+  },
+  {
+    id: 2,
+    partName: 'Bóng đèn tròn',
+    icon: '💡',
+    badge: 'Bộ phận 2/4',
+    question: 'Bóng đèn trong mạch điện đóng vai trò là bộ phận nào?',
+    options: [
+      { text: 'A. Nguồn cung cấp năng lượng điện cho toàn mạch', isCorrect: false },
+      { text: 'B. Thiết bị tiêu thụ điện năng, biến đổi điện năng thành quang năng để phát sáng', isCorrect: true },
+      { text: 'C. Dụng cụ đóng ngắt dòng điện tự động', isCorrect: false },
+      { text: 'D. Dây dẫn kết nối các cực của pin lại với nhau', isCorrect: false }
+    ],
+    explain: '💡 <b>Giải thích:</b> Bóng đèn là thiết bị tiêu thụ điện năng (tải tiêu thụ), chuyển hóa năng lượng điện thành quang năng (ánh sáng) và nhiệt năng.'
+  },
+  {
+    id: 3,
+    partName: 'Công tắc (Khóa K)',
+    icon: '⚡',
+    badge: 'Bộ phận 3/4',
+    question: 'Công tắc (Khóa K) có công dụng gì trong mạch điện?',
+    options: [
+      { text: 'A. Đóng hoặc ngắt mạch điện một cách chủ động, cho phép hoặc ngăn dòng điện chạy qua', isCorrect: true },
+      { text: 'B. Tăng hiệu điện thế của pin lên nhiều lần để đèn sáng hơn', isCorrect: false },
+      { text: 'C. Làm cho bóng đèn phát sáng mà không cần dùng đến nguồn pin', isCorrect: false },
+      { text: 'D. Đo cường độ dòng điện chạy qua bóng đèn', isCorrect: false }
+    ],
+    explain: '💡 <b>Giải thích:</b> Công tắc (Khóa K) là thiết bị đóng/ngắt mạch: Khi đóng, mạch kín -> có dòng điện; Khi mở, mạch hở -> dòng điện bị ngắt.'
+  },
+  {
+    id: 4,
+    partName: 'Dây dẫn điện',
+    icon: '〰️',
+    badge: 'Bộ phận 4/4',
+    question: 'Dây dẫn điện (lõi kim loại đồng bọc vỏ nhựa cách điện) có công dụng gì?',
+    options: [
+      { text: 'A. Tự phát sinh dòng điện để thắp sáng các thiết bị', isCorrect: false },
+      { text: 'B. Kết nối các bộ phận thành mạch kín và dẫn truyền dòng điện từ nguồn qua các linh kiện', isCorrect: true },
+      { text: 'C. Tự động ngắt mạch điện khi quá tải', isCorrect: false },
+      { text: 'D. Đo hiệu điện thế giữa hai đầu của bóng đèn', isCorrect: false }
+    ],
+    explain: '💡 <b>Giải thích:</b> Dây dẫn điện có lõi đồng dẫn điện tốt, dùng để kết nối nguồn điện, công tắc và các thiết bị thành một vòng mạch kín liên tục.'
+  }
+];
