@@ -40,8 +40,8 @@ export function openStudio(mode = 'free', presetIdx = null, readOnly = false) {
   resize2D();
   setReadOnlyMode(readOnly);
 
-  if (mode === 'challenge1') {
-    switchStudioMode('challenge1');
+  if (mode === 'challenge1' || mode === 'challenge2') {
+    switchStudioMode(mode);
   } else {
     if (presetIdx !== null && presetIdx !== undefined) {
       S.presetIdx = presetIdx;
@@ -83,7 +83,7 @@ function initApp() {
   const cv2d = $('cv');
   initRenderer2D(cv2d);
   initInteraction2D(cv2d);
-  registerInteractionCallbacks({ updateInspector });
+  registerInteractionCallbacks({ updateInspector, say: sayThrottled });
 
   // Đăng ký các hook cho bộ giải MNA
   registerSolverCallbacks({
@@ -91,7 +91,7 @@ function initApp() {
       if (triggerFeedback) diagnoseAndSpeak();
       updateHUD();
       updateInspector();
-      if (AppState.gmMode === 'challenge1') {
+      if (AppState.gmMode === 'challenge1' || AppState.gmMode === 'challenge2') {
         renderTaskCard(false);
       }
     },

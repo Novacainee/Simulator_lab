@@ -11,7 +11,7 @@ export const ZONE_TARGETS = {
   sample1:     { x: -6.0, z: -1.5, yaw: 1.57,  pitch: 0.06,  name: 'Thử Thách 1: Lắp Mạch Đơn' },
   sample2:     { x: -4.2, z: -4.6, yaw: 0.00,  pitch: 0.08,  name: 'Mẫu 2: Hai Đèn Nối Tiếp' },
   sample3:     { x: 3.8,  z: -4.6, yaw: 0.00,  pitch: 0.08,  name: 'Mẫu 3: Hai Đèn Song Song' },
-  doctor:      { x: 6.0,  z: -3.2, yaw: -1.57, pitch: 0.06,  name: 'Khu Bác Sĩ Mạch' },
+  doctor:      { x: 6.0,  z: -3.2, yaw: -1.57, pitch: 0.06,  name: 'Thử Thách 2: Bác Sĩ Mạch' },
   free:        { x: 0,    z: 5.5,  yaw: 0,     pitch: -0.08, name: 'Khu Lắp Mạch Tự Do' },
   quiz:        { x: 7.2,  z: 3.8,  yaw: -1.45, pitch: -0.01, name: 'Khu Ôn Tập & Ký Hiệu' },
   challenge:   { x: -7.2, z: 4.5,  yaw: 1.45,  pitch: -0.01, name: 'Khu Thử Thách Đo & Lắp' },
@@ -393,3 +393,48 @@ export const COMPONENT_FUNCTION_QUIZ = [
     explain: '💡 <b>Giải thích:</b> Dây dẫn điện có lõi đồng dẫn điện tốt, dùng để kết nối nguồn điện, công tắc và các thiết bị thành một vòng mạch kín liên tục.'
   }
 ];
+
+// ==========================================================================
+// THỬ THÁCH MÀN 2: BÁC SĨ CHẨN ĐOÁN NGUYÊN NHÂN & SỬA MẠCH ĐIỆN (GIỐNG HÌNH 2)
+// ==========================================================================
+export const CHALLENGE_2_DATA = {
+  title: 'Thử Thách Màn 2: Bác Sĩ Chuẩn Đoán & Sửa Mạch',
+  desc: 'Mạch điện trên bàn gồm Pin 9V, Khóa K và Bóng đèn nhưng đèn KHÔNG sáng. Em hãy quan sát kỹ, chọn đúng 2 nguyên nhân khiến đèn chưa sáng để được mở khóa sửa chữa mạch điện!',
+  diagnosisOptions: [
+    { id: 'switch_open', text: 'Khóa K (Công tắc) chưa đóng', isCorrect: true },
+    { id: 'loose_wire', text: '1 đầu dây dẫn chưa nối vào cực pin', isCorrect: true },
+    { id: 'wrong_pole', text: 'Nối sai cực của nguồn pin', isCorrect: false, explain: 'Nguồn pin một chiều thì đổi cực đèn vẫn sáng bình thường, đây không phải nguyên nhân khiến đèn tắt!' },
+    { id: 'blown_bulb', text: 'Bóng đèn bị đứt dây tóc (bị cháy)', isCorrect: false, explain: 'Bóng đèn dây tóc vẫn còn nguyên vẹn, nguyên nhân là do mạch điện đang bị hở!' }
+  ],
+  setup: (W, H) => {
+    clearCompsAndWires();
+    const cx = W * 0.44;
+    const cy = H * 0.48;
+    // 3 linh kiện được nối sẵn mạch lỗi giống Hình 2
+    const bat = makeComp('battery', cx - 180, cy - 80, { v: 9 });
+    const sw  = makeComp('switch',  cx + 140, cy - 80, { closed: false });
+    const blb = makeComp('bulb',    cx,       cy + 95, { r: 10 });
+
+    // Dây 1: Cực dương Pin (+) -> Chốt 0 của Công tắc
+    addWire(bat.id, 1, sw.id, 0);
+    // Dây 2: Chốt 1 của Công tắc -> Chốt 1 của Bóng đèn
+    addWire(sw.id, 1, blb.id, 1);
+    // Lưu ý: Chốt 0 của Bóng đèn và Cực âm (-) của Pin ĐỂ HỞ (1 đầu dây chưa nối vào pin)
+    // Công tắc sw.closed = false (Khóa K chưa đóng)
+    solveCircuit(false);
+  },
+  checkFixed: () => {
+    const lit = comps.filter(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+    if (S.shortCircuit) {
+      return { ok: false, msg: '🚨 Mạch đang bị đoản mạch trực tiếp hai cực của Pin! Hãy ngắt hoặc sửa lại đường dây nối.' };
+    }
+    if (lit.length >= 1) {
+      return { ok: true, msg: '🎉 Xuất sắc! Em đã nối kín dây vào cực Pin và đóng Khóa K, bóng đèn đã sáng rực rỡ!' };
+    }
+    const sw = comps.find(c => c.type === 'switch');
+    if (sw && !sw.closed) {
+      return { ok: false, msg: '💡 Em nhớ bấm vào Khóa K để ĐÓNG MẠCH cho dòng điện chạy qua nhé!' };
+    }
+    return { ok: false, msg: '💡 Đèn chưa sáng! Hãy kéo dây nối từ chốt còn lại của Đèn vào cực Âm (-) của Pin.' };
+  }
+};

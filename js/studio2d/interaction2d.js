@@ -3,7 +3,7 @@
                                   kéo 2 que đo Vôn kế & khóa Read-Only
    ========================================================================== */
 
-import { S, comps, wires, getTermPos, addWire, deleteWireByIndex } from '../state.js';
+import { S, AppState, comps, wires, getTermPos, addWire, deleteWireByIndex } from '../state.js';
 import { solveCircuit, distToSegment, findProbeNode } from '../physics/mnaSolver.js';
 import { sfxClick } from '../audio/soundEngine.js';
 
@@ -15,9 +15,11 @@ let wireStart = null;
 let mousePos = { x: 0, y: 0 };
 
 let onUpdateInspector = null;
+let onSay = null;
 
 export function registerInteractionCallbacks(callbacks) {
   if (callbacks.updateInspector) onUpdateInspector = callbacks.updateInspector;
+  if (callbacks.say) onSay = callbacks.say;
 }
 
 export function getWireStartState() {
@@ -45,7 +47,7 @@ export function resetProbes(id) {
 }
 
 export function rotateComp(id) {
-  if (S.readOnly) return;
+  if (S.readOnly || (AppState.gmMode === 'challenge2' && !AppState.challenge2Diagnosed)) return;
   const c = comps.find(x => x.id === id);
   if (!c || c.type === 'voltmeter') return;
   c.rot = c.rot ? 0 : 1;
@@ -94,6 +96,12 @@ export function initInteraction2D(canvasElement) {
     cv.setPointerCapture(ev.pointerId);
     const p = getCanvasPt(ev);
     mousePos = p;
+
+    // Trong Thử thách 2: Khi chưa chẩn đoán đúng 2 nguyên nhân thì tạm khóa tương tác sửa mạch
+    if (AppState.gmMode === 'challenge2' && !AppState.challenge2Diagnosed) {
+      if (onSay) onSay('🔒 <b>Mạch đang tạm khóa!</b> Em hãy hoàn thành bước <b>Bác sĩ bắt bệnh</b> ở bảng bên phải để mở khóa sửa mạch nhé!', 'warn', 1800);
+      return;
+    }
 
     // 1. Chế độ cắt dây (Chỉ khả dụng khi không ở Read-Only)
     if (S.cutMode && !S.readOnly) {

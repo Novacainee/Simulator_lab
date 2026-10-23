@@ -810,33 +810,136 @@ function makeWallBoardTexture(title, subtitle, schemeType) {
     g2.fillText('• Định luật song song: U = U₁ = U₂ = 9V (hai đèn nhận đủ áp nguồn) · Dòng điện chính I = I₁ + I₂', 512, 535);
 
   } else if (schemeType === 'doctor') {
-    // BÁC SĨ MẠCH
-    const xL = 200, xR = 824, yT = 160, yB = 390;
-    g2.strokeStyle = '#f87171';
+    // THỬ THÁCH MÀN 2: BÁC SĨ CHẨN ĐOÁN LỖI MẠCH (GIỐNG HÌNH 2)
+    // 1. Khung hộp mô tả nhiệm vụ bên trái (x: 50 .. 490, y: 130 .. 510)
+    g2.save();
+    g2.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    g2.strokeStyle = '#ef4444';
+    g2.lineWidth = 2.5;
     g2.beginPath();
-    g2.moveTo(xL, yT); g2.lineTo(395, yT);
-    g2.moveTo(485, yT); g2.lineTo(620, yT);
-    g2.moveTo(706, yT); g2.lineTo(xR, yT);
-    g2.lineTo(xR, yB);
-    g2.lineTo(726, yB);
-    g2.moveTo(674, yB); g2.lineTo(538, yB);
-    g2.moveTo(482, yB); g2.lineTo(xL, yB);
-    g2.lineTo(xL, yT);
+    g2.roundRect(50, 130, 440, 380, 14);
+    g2.fill();
     g2.stroke();
 
-    drawBatterySym(440, yT, 'Pin 9V');
-    drawSwitchSym(663, yT, true, 'Khóa K (Đóng)');
-    drawAmmeterSym(700, yB);
-    drawBulbSym(510, yB, 'Đèn HỎNG (Tắt)', false);
-    drawVoltmeterSym(510, 480, 482, yB, 538, yB);
-
+    // Tiêu đề khung nhiệm vụ
     g2.fillStyle = '#f87171';
-    g2.font = '800 24px "Be Vietnam Pro", sans-serif';
-    g2.fillText('⚡ BÁC SĨ MẠCH: DÙNG QUE ĐO VÔN KẾ TÌM ĐIỂM HỞ MẠCH / ĐỨT DÂY TÓC', 512, 275);
+    g2.font = '800 22px "Be Vietnam Pro", sans-serif';
+    g2.textAlign = 'left';
+    g2.fillText('📋 THỬ THÁCH 2: BẮT BỆNH & SỬA MẠCH', 70, 170);
 
-    g2.fillStyle = '#fef08a';
-    g2.font = '700 17px "Be Vietnam Pro", sans-serif';
-    g2.fillText('• Gợi ý chẩn đoán: Nếu Vôn kế chỉ 9V nhưng đèn không sáng -> Dây tóc đèn bị đứt!', 512, 535);
+    g2.font = '600 16px "Be Vietnam Pro", sans-serif';
+    g2.fillStyle = '#f8fafc';
+    g2.fillText('🔍 Hiện tượng: Mạch điện có đủ Pin, Khóa K, Đèn', 70, 208);
+    g2.fillText('   nhưng bóng đèn hoàn toàn KHÔNG sáng!', 70, 234);
+
+    // Đường phân cách
+    g2.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+    g2.lineWidth = 1.5;
+    g2.beginPath();
+    g2.moveTo(70, 252); g2.lineTo(470, 252);
+    g2.stroke();
+
+    // Hai bước nhiệm vụ
+    g2.fillStyle = '#fde047';
+    g2.font = '800 17px "Be Vietnam Pro", sans-serif';
+    g2.fillText('🩺 BƯỚC 1: BÁC SĨ BẮT BỆNH', 70, 282);
+    g2.fillStyle = '#e2e8f0';
+    g2.font = '500 15px "Be Vietnam Pro", sans-serif';
+    g2.fillText('• Quan sát và chọn đúng 2 nguyên nhân khiến đèn tắt.', 70, 308);
+
+    g2.fillStyle = '#38bdf8';
+    g2.font = '800 17px "Be Vietnam Pro", sans-serif';
+    g2.fillText('🛠️ BƯỚC 2: KHẮC PHỤC & SỬA MẠCH', 70, 344);
+    g2.fillStyle = '#e2e8f0';
+    g2.font = '500 15px "Be Vietnam Pro", sans-serif';
+    g2.fillText('• Nối kín đầu dây vào cực Pin và Đóng Khóa K cho đèn sáng!', 70, 370);
+
+    // Đường phân cách 2
+    g2.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+    g2.beginPath();
+    g2.moveTo(70, 396); g2.lineTo(470, 396);
+    g2.stroke();
+
+    // Hướng dẫn
+    g2.fillStyle = '#4ade80';
+    g2.font = '700 16px "Be Vietnam Pro", sans-serif';
+    g2.fillText('👉 Nhấp vào bàn để vào phòng lab bắt bệnh!', 70, 436);
+    g2.fillStyle = '#fca5a5';
+    g2.font = '600 14px "Be Vietnam Pro", sans-serif';
+    g2.fillText('⚠️ Phải chẩn đoán đúng 2 lỗi mới được sửa mạch!', 70, 468);
+    g2.restore();
+
+    // 2. Bên phải (x: 520 .. 970): Sơ đồ mạch điện đang bị lỗi (Giống Hình 2)
+    g2.save();
+    g2.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    g2.strokeStyle = '#ef4444';
+    g2.lineWidth = 2.5;
+    g2.beginPath();
+    g2.roundRect(520, 130, 450, 380, 14);
+    g2.fill();
+    g2.stroke();
+
+    g2.textAlign = 'center';
+    g2.fillStyle = '#fde047';
+    g2.font = '800 20px "Be Vietnam Pro", sans-serif';
+    g2.fillText('SƠ ĐỒ MẠCH ĐANG BỊ LỖI (GIỐNG HÌNH 2)', 745, 170);
+
+    // Ký hiệu Pin 9V ở trên bên trái
+    drawBatterySym(630, 240, 'Pin 9V');
+
+    // Ký hiệu Khóa K đang mở ở trên bên phải
+    drawSwitchSym(850, 240, false, 'Khóa K (Mở)');
+
+    // Ký hiệu Bóng đèn tròn ở dưới
+    drawBulbSym(745, 410, 'Đèn (Tắt)', false);
+
+    // Dây 1 (Đỏ): Nối từ cực (+) Pin sang Khóa K
+    g2.strokeStyle = '#ef4444';
+    g2.lineWidth = 3.5;
+    g2.beginPath();
+    g2.moveTo(620, 240);
+    g2.lineTo(580, 240);
+    g2.lineTo(580, 195);
+    g2.lineTo(824, 195);
+    g2.lineTo(824, 240);
+    g2.stroke();
+
+    // Dây 2 (Đỏ): Nối từ Khóa K sang chốt phải của Đèn
+    g2.beginPath();
+    g2.moveTo(876, 240);
+    g2.lineTo(925, 240);
+    g2.lineTo(925, 410);
+    g2.lineTo(771, 410);
+    g2.stroke();
+
+    // Dây 3 (Xanh dương): Nối từ chốt trái của Đèn đi lên nhưng HỞ / ĐỨT ĐOẠN trước cực Pin (-)
+    g2.strokeStyle = '#38bdf8';
+    g2.beginPath();
+    g2.moveTo(719, 410);
+    g2.lineTo(660, 410);
+    g2.lineTo(660, 320);
+    g2.stroke();
+
+    // Điểm hở mạch: Vẽ vòng tròn đỏ có dấu nhân
+    g2.fillStyle = '#ef4444';
+    g2.beginPath(); g2.arc(660, 320, 8, 0, Math.PI * 2); g2.fill();
+    g2.strokeStyle = '#ffffff'; g2.lineWidth = 2;
+    g2.beginPath();
+    g2.moveTo(655, 315); g2.lineTo(665, 325);
+    g2.moveTo(665, 315); g2.lineTo(655, 325);
+    g2.stroke();
+
+    // Cảnh báo 1: Dây hở
+    g2.fillStyle = '#f87171';
+    g2.font = '700 14px "Be Vietnam Pro", sans-serif';
+    g2.textAlign = 'left';
+    g2.fillText('❌ Lỗi 1: 1 đầu dây chưa nối vào pin', 600, 350);
+
+    // Cảnh báo 2: Khóa K mở
+    g2.fillStyle = '#fde047';
+    g2.fillText('❌ Lỗi 2: Khóa K chưa đóng', 760, 280);
+
+    g2.restore();
   }
 
   // Nút hành động BẤM ĐỂ THỰC HÀNH
@@ -1249,34 +1352,52 @@ function createExperimentStation({ x, z, rotY, title, subtitle, schemeType, acti
     group.add(build3DWireCurve({ x: -0.52, y: tableY + 0.04, z: 0.32 }, { x: 0.07, y: tableY + 0.05, z: 0.35 }, 0x18181b, 0.03));
 
   } else if (schemeType === 'doctor') {
-    // BÁC SĨ MẠCH: MẠCH CÓ LỖI (ĐÈN HỎNG DÂY TÓC) ĐỂ KHÁM VÀ SỬA
+    // THỬ THÁCH 2: MẠCH ĐANG BỊ LỖI (GIỐNG HÌNH 2)
+    // 1. Nguồn Pin 9V
     const bat = build3DBatteryPack('9V');
     bat.position.set(-0.65, tableY, -0.15);
     group.add(bat);
 
-    const sw = build3DKnifeSwitch(true);
-    sw.position.set(-0.15, tableY, -0.22);
+    // 2. Khóa K dao (Đang MỞ - cần gạt ngửa lên)
+    const sw = build3DKnifeSwitch(false);
+    sw.position.set(-0.02, tableY, -0.20);
     group.add(sw);
 
-    const am = build3DMeter('A', '0.00 A');
-    am.position.set(0.48, tableY, -0.20);
-    group.add(am);
-
-    // Đèn bị cháy không sáng (isLit = false)
-    const bulb = build3DLightBulb('Đ (Lỗi)', false, 0);
-    bulb.position.set(0.38, tableY, 0.22);
+    // 3. Bóng đèn tròn (Chưa sáng)
+    const bulb = build3DLightBulb('Đ', false, 0);
+    bulb.position.set(0.42, tableY, 0.16);
     group.add(bulb);
 
-    const vm = build3DMeter('V', '9.0 V');
-    vm.position.set(-0.35, tableY, 0.22);
-    group.add(vm);
+    // 4. Dây nối thể hiện đúng mạch đang bị lỗi giống Hình 2
+    // Dây 1 (Đỏ): Cực (+) của Pin sang chốt trái của Khóa K
+    group.add(build3DWireCurve(
+      { x: -0.73, y: tableY + 0.22, z: -0.15 },
+      { x: -0.11, y: tableY + 0.065, z: -0.20 },
+      0xef4444
+    ));
 
-    group.add(build3DWireCurve({ x: -0.73, y: tableY + 0.22, z: -0.15 }, { x: -0.24, y: tableY + 0.065, z: -0.22 }, 0xef4444));
-    group.add(build3DWireCurve({ x: -0.06, y: tableY + 0.065, z: -0.22 }, { x: 0.48, y: tableY + 0.04, z: -0.10 }, 0xef4444));
-    group.add(build3DWireCurve({ x: 0.41, y: tableY + 0.04, z: -0.10 }, { x: 0.27, y: tableY + 0.05, z: 0.22 }, 0xfacc15));
-    group.add(build3DWireCurve({ x: 0.49, y: tableY + 0.05, z: 0.22 }, { x: -0.57, y: tableY + 0.215, z: -0.15 }, 0x18181b, 0.06));
-    group.add(build3DWireCurve({ x: -0.35, y: tableY + 0.04, z: 0.32 }, { x: 0.27, y: tableY + 0.05, z: 0.22 }, 0xef4444, 0.02));
-    group.add(build3DWireCurve({ x: -0.42, y: tableY + 0.04, z: 0.32 }, { x: 0.49, y: tableY + 0.05, z: 0.22 }, 0x18181b, 0.03));
+    // Dây 2 (Đỏ): Chốt phải của Khóa K sang chốt phải của Bóng đèn
+    group.add(build3DWireCurve(
+      { x: 0.07, y: tableY + 0.065, z: -0.20 },
+      { x: 0.53, y: tableY + 0.05, z: 0.16 },
+      0xef4444
+    ));
+
+    // Dây 3 (Xanh dương): Chốt trái của Bóng đèn kéo lên phía Pin nhưng ĐẦU DÂY BỊ HỞ RỜI RA
+    group.add(build3DWireCurve(
+      { x: 0.31, y: tableY + 0.05, z: 0.16 },
+      { x: -0.36, y: tableY + 0.065, z: 0.08 },
+      0x0284c7
+    ));
+
+    // Đầu jack kim loại rời của dây xanh (chưa cắm vào Pin)
+    const looseJack = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.012, 0.04, 8),
+      new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 })
+    );
+    looseJack.rotation.z = Math.PI / 3;
+    looseJack.position.set(-0.36, tableY + 0.065, 0.08);
+    group.add(looseJack);
   }
 
   // 3. Nhân vật Học sinh 3D chi tiết cao chuẩn THCS (Chiều cao chuẩn 1.88m có khăn quàng đỏ)
@@ -2179,14 +2300,14 @@ function buildCenterLabStation(parentGroup) {
 function buildDoctorStation(parentGroup) {
   const docStation = createExperimentStation({
     x: 9.8, z: -3.2, rotY: -Math.PI / 2,
-    title: 'II. BÁC SĨ MẠCH & ĐO ĐẠC',
-    subtitle: 'Tìm lỗi mạch bị hỏng & Thực hành mắc đồng hồ đo',
+    title: 'THỬ THÁCH 2: CHẨN ĐOÁN LỖI MẠCH ĐIỆN',
+    subtitle: 'Nhiệm vụ: Bắt bệnh đèn chưa sáng & Khắc phục sự cố',
     schemeType: 'doctor',
     studentShirt: 0xffffff,
     studentGender: 'female',
     actionData: {
-      label: '🩺 Vào Khu Bác Sĩ Mạch (Tìm lỗi & Sửa chữa bí ẩn)',
-      mode: 'doc',
+      label: '🩺 Bắt đầu Thử thách 2: Bác sĩ chẩn đoán & Sửa mạch',
+      mode: 'challenge2',
       readOnly: false
     }
   });

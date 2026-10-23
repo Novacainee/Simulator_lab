@@ -16,7 +16,10 @@ export const S = {
 
 export const AppState = {
   inStudio: false,
-  gmMode: 'free',           // 'free', 'build', 'doc', 'sym'
+  gmMode: 'free',           // 'free', 'challenge1', 'challenge2', 'build', 'doc', 'sym'
+  challenge1Passed: false,
+  challenge2Diagnosed: false,
+  challenge2Passed: false,
   buildLv: 0,
   docLv: 0,
   symLv: 0,

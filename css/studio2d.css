@@ -709,6 +709,42 @@ body.readonly-mode #presetBtn {
   box-shadow: 0 0 10px #f59e0b;
 }
 
+.station-badge.mode-challenge2 {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: #ef4444;
+  color: #b91c1c;
+}
+.station-badge.mode-challenge2 .station-badge-dot {
+  background: #ef4444;
+  box-shadow: 0 0 10px #ef4444;
+}
+
+.diag-opt-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: #1e293b;
+  user-select: none;
+}
+.diag-opt-label:hover {
+  background: #eff6ff !important;
+  border-color: #38bdf8 !important;
+}
+.diag-opt-label:has(input:checked) {
+  background: #f0fdf4 !important;
+  border-color: #10b981 !important;
+  color: #047857 !important;
+  font-weight: 700;
+}
+
 .challenge-checklist {
   display: grid;
   grid-template-columns: 1fr 1fr;

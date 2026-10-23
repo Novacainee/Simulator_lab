@@ -5,7 +5,7 @@
 
 import { S, AppState, comps, wires, COMP_META, deleteComp, makeComp, addWire } from '../state.js';
 import { solveCircuit, fmt, cleanZero } from '../physics/mnaSolver.js';
-import { BUILD_TASKS, DOC_TASKS, SYM_QUIZ, CHALLENGE_1_DATA, COMPONENT_FUNCTION_QUIZ, shuffleQuizOptions, loadPresetCircuit } from '../data/challenges.js';
+import { BUILD_TASKS, DOC_TASKS, SYM_QUIZ, CHALLENGE_1_DATA, CHALLENGE_2_DATA, COMPONENT_FUNCTION_QUIZ, shuffleQuizOptions, loadPresetCircuit } from '../data/challenges.js';
 import { sfxClick, sfxZap, sfxWin } from '../audio/soundEngine.js';
 import { resetProbes, rotateComp, toggleSwitch } from './interaction2d.js';
 import { getCanvasDimensions, spawnBurst } from './renderer2d.js';
@@ -66,6 +66,23 @@ export function diagnoseAndSpeak() {
     return;
   }
 
+  if (AppState.gmMode === 'challenge2') {
+    const lit = comps.filter(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+    if (lit.length >= 1 && !S.shortCircuit) {
+      if (!AppState.challenge2Passed) {
+        AppState.challenge2Passed = true;
+        sfxWin();
+        spawnBurst(lit[0].x, lit[0].y);
+        say('🎉 <b>Bóng đèn đã phát sáng rực rỡ!</b><br>Em đã chẩn đoán đúng bệnh và nối dây kín mạch thành công!', 'ok');
+      }
+    } else if (S.shortCircuit) {
+      sfxZap();
+      sayThrottled('🔥 <b>ĐOẢN MẠCH!</b> Dây nối đang nối trực tiếp 2 cực của Pin làm chập nguồn, hãy ngắt bớt dây đi tắt nhé!', 'warn', 1800);
+    }
+    renderTaskCard(false);
+    return;
+  }
+
   if (S.docMysteryActive) {
     const anyLit = comps.some(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.1) && !S.shortCircuit;
     if (anyLit) {
@@ -111,6 +128,16 @@ export function updateHUD() {
       : (S.shortCircuit
         ? `<b style="color:#ff6b57">🔥 ĐANG ĐOẢN MẠCH NGUỒN!</b> · ${countTxt}`
         : `<b style="color:#f59e0b">🎯 Thử thách 1: Lắp mạch 4 bộ phận</b> · ${countTxt}`));
+    return;
+  }
+
+  if (AppState.gmMode === 'challenge2') {
+    const lit = comps.some(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+    pill.innerHTML = cutTxt + (lit
+      ? `<b style="color:#4cf08a">✨ Thử Thách 2: Đã sửa xong mạch & Đèn sáng!</b> · ${countTxt}`
+      : (AppState.challenge2Diagnosed
+        ? `<b style="color:#38bdf8">🛠️ Bước 2: Hãy nối dây vào Pin & đóng Khóa K</b> · ${countTxt}`
+        : `<b style="color:#f59e0b">🩺 Bước 1: Hãy chọn đúng 2 nguyên nhân đèn tắt</b> · ${countTxt}`));
     return;
   }
 
@@ -426,6 +453,181 @@ export function renderTaskCard(reshuffle = true) {
         openChallenge1Quiz();
       };
     }
+  } else if (AppState.gmMode === 'challenge2') {
+    $('taskHeaderTitle').textContent = '🩺 Thử thách Màn 2';
+    btns.style.display = 'flex';
+    hintBtn.style.display = 'inline-flex';
+    hintBtn.textContent = '💡 Gợi ý bắt bệnh';
+
+    const hasBattery = comps.some(c => c.type === 'battery');
+    const hasSwitch = comps.some(c => c.type === 'switch');
+    const hasClosedSwitch = comps.some(c => c.type === 'switch' && c.closed);
+    const litBulb = comps.find(c => c.type === 'bulb' && !c.blown && Math.abs(c.I) > 0.05);
+    const isLit = Boolean(litBulb);
+    const wireCount = wires.length;
+
+    if (!AppState.challenge2Diagnosed) {
+      // BƯỚC 1: BÁC SĨ CHẨN ĐOÁN NGUYÊN NHÂN (PHẢI CHỌN ĐÚNG 2 Ô)
+      body.innerHTML = `
+        <div class="task-box" style="border-left-color:#ef4444">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <span style="background:#ef4444;color:#fff;font-size:.68rem;font-weight:800;padding:2px 7px;border-radius:4px">BƯỚC 1 / 2</span>
+            <span style="font-size:.78rem;font-weight:700;color:#dc2626">Bác Sĩ Bắt Bệnh Đèn Tắt</span>
+          </div>
+          <h4 style="color:#b91c1c;margin:2px 0 6px 0">${CHALLENGE_2_DATA.title}</h4>
+          <p style="margin:4px 0 10px 0;font-size:.78rem;color:var(--text)">
+            Mạch điện gồm Pin, Khóa K và Bóng đèn nhưng <b>đèn KHÔNG sáng</b>. Quan sát mạch và <b>chọn đúng 2 ô</b> nguyên nhân khiến mạch hở:
+          </p>
+
+          <div class="diagnosis-options-list" style="display:flex;flex-direction:column;gap:7px;margin:8px 0">
+            ${CHALLENGE_2_DATA.diagnosisOptions.map(opt => `
+              <label class="diag-opt-label">
+                <input type="checkbox" name="challenge2_diag" value="${opt.id}" style="width:17px;height:17px;cursor:pointer;accent-color:#0284c7" />
+                <span>${opt.text}</span>
+              </label>
+            `).join('')}
+          </div>
+
+          <div id="diagFeedback" style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;font-size:.74rem;line-height:1.4"></div>
+
+          <button class="btn success" id="confirmDiagBtn" style="width:100%;margin-top:10px;padding:9px 10px;font-weight:800;font-size:.82rem;justify-content:center;border-radius:8px;background:#ef4444;color:#fff;border:none;cursor:pointer">
+            🩺 XÁC NHẬN CHẨN ĐOÁN
+          </button>
+        </div>
+      `;
+
+      $('progBar').style.width = '25%';
+      $('progLbl').textContent = 'Bước 1: Chẩn đoán nguyên nhân (Chọn đúng 2 ô)';
+
+      const confirmBtn = $('confirmDiagBtn');
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          const checked = Array.from(document.querySelectorAll('input[name="challenge2_diag"]:checked')).map(cb => cb.value);
+          const fb = $('diagFeedback');
+          if (checked.length !== 2) {
+            sfxClick(220);
+            if (fb) {
+              fb.style.display = 'block';
+              fb.style.background = '#fef2f2';
+              fb.style.border = '1px solid #fecaca';
+              fb.style.color = '#b91c1c';
+              fb.innerHTML = `⚠️ <b>Em phải chọn đúng 2 ô nguyên nhân</b> trong 4 phương án trên! (Hiện tại em đã chọn ${checked.length} ô)`;
+            }
+            say(`⚠️ Em hãy chọn đúng 2 ô nguyên nhân khiến đèn chưa sáng nhé! (Hiện chọn ${checked.length} ô)`, 'warn');
+            return;
+          }
+
+          const hasSwitch = checked.includes('switch_open');
+          const hasLoose = checked.includes('loose_wire');
+
+          if (hasSwitch && hasLoose) {
+            // Đúng cả 2 đáp án!
+            AppState.challenge2Diagnosed = true;
+            sfxWin();
+            say('🎉 <b>Chẩn đoán chính xác!</b><br>Em đã tìm đúng 2 nguyên nhân: <b>Khóa K chưa đóng</b> và <b>1 đầu dây chưa nối vào cực pin</b>.<br>🔓 <b>ĐÃ MỞ KHÓA SỬA MẠCH!</b> Bây giờ em hãy nối dây còn lại vào cực Pin và ĐÓNG KHÓA K nhé!', 'ok');
+            renderTaskCard(false);
+          } else {
+            // Có chọn đáp án sai
+            sfxClick(220);
+            let wrongMsg = '';
+            if (checked.includes('wrong_pole')) {
+              wrongMsg = '❌ <b>Nối sai cực pin:</b> Bóng đèn dây tóc không phân cực âm/dương, dù đổi chiều pin thì đèn vẫn sáng nếu mạch kín. Đây không phải nguyên nhân đèn tắt!';
+            } else if (checked.includes('blown_bulb')) {
+              wrongMsg = '❌ <b>Bóng đèn bị đứt dây tóc:</b> Quan sát kỹ bóng đèn, dây tóc bên trong vẫn còn nguyên vẹn. Mạch chưa sáng là do đang bị hở!';
+            } else {
+              wrongMsg = '❌ Chưa đúng rồi! Hãy quan sát kỹ lại Khóa K và sợi dây nối từ Đèn sang Pin xem có điểm hở nào không nhé!';
+            }
+            if (fb) {
+              fb.style.display = 'block';
+              fb.style.background = '#fef2f2';
+              fb.style.border = '1px solid #fecaca';
+              fb.style.color = '#b91c1c';
+              fb.innerHTML = wrongMsg;
+            }
+            say(wrongMsg, 'warn');
+          }
+        };
+      }
+    } else {
+      // BƯỚC 2: KHẮC PHỤC & SỬA MẠCH (ĐÃ MỞ KHÓA)
+      let repairScore = 2; // Đã xong chẩn đoán (2 điểm)
+      if (wireCount >= 3) repairScore++;
+      if (hasClosedSwitch) repairScore++;
+      if (isLit) repairScore++;
+
+      const finishBtnHTML = isLit ? `
+        <div id="finishChallenge2Wrap" style="margin-top:12px">
+          <button class="btn success pulse-gold" id="finishChallenge2Btn" style="width:100%;padding:11px 10px;font-weight:800;font-size:.84rem;justify-content:center;border-radius:10px;cursor:pointer">
+            🏆 HOÀN THÀNH THỬ THÁCH 2 & QUAY LẠI 3D
+          </button>
+        </div>
+      ` : `
+        <div style="margin-top:10px;font-size:.73rem;color:var(--muted);text-align:center">
+          ⚡ Nối dây còn lại vào cực Pin (-) và đóng Khóa K cho đèn sáng!
+          <div style="margin-top:6px">
+            <button class="btn" id="autoFixChallenge2Btn" style="font-size:.72rem;padding:4px 10px;margin:0 auto;background:#f1f5f9;color:#334155;border:1px dashed #94a3b8">
+              ⚡ Hoặc bấm: Sửa nhanh mạch mẫu
+            </button>
+          </div>
+        </div>
+      `;
+
+      body.innerHTML = `
+        <div class="task-box" style="border-left-color:#10b981">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <span style="background:#10b981;color:#fff;font-size:.68rem;font-weight:800;padding:2px 7px;border-radius:4px">BƯỚC 2 / 2</span>
+            <span style="font-size:.78rem;font-weight:700;color:#059669">Khắc Phục & Sửa Mạch Điện</span>
+          </div>
+          <h4 style="color:#047857;margin:2px 0 6px 0">🔓 Đã Mở Khóa Sửa Mạch!</h4>
+          
+          <div class="challenge-checklist">
+            <div class="chk-item done">
+              <span>🩺 <b>1. Chẩn đoán:</b> ĐÃ XÁC ĐỊNH ĐÚNG 2 LỖI</span>
+            </div>
+            <div class="chk-item ${wireCount >= 3 ? 'done' : ''}">
+              <span>〰️ <b>2. Nối đầu dây vào Pin (-):</b> ${wireCount >= 3 ? 'Đã nối dây kín mạch' : 'Chưa nối dây từ Đèn vào cực (-) Pin'}</span>
+            </div>
+            <div class="chk-item ${hasClosedSwitch ? 'done-active' : ''}">
+              <span>⚡ <b>3. Đóng Khóa K:</b> ${hasClosedSwitch ? 'Đã đóng (Mạch kín)' : 'Đang mở (Bấm vào Khóa K để ĐÓNG)'}</span>
+            </div>
+            <div class="chk-item ${isLit ? 'done-lit' : ''}">
+              <span>💡 <b>4. Bóng đèn:</b> ${isLit ? '✨ ĐÃ PHÁT SÁNG RỰC RỠ!' : 'Chưa sáng (cần nối kín & đóng K)'}</span>
+            </div>
+          </div>
+          ${finishBtnHTML}
+        </div>
+      `;
+
+      $('progBar').style.width = isLit ? '100%' : `${(repairScore / 5) * 100}%`;
+      $('progLbl').textContent = isLit ? 'Hoàn thành Thử Thách 2!' : `Tiến độ sửa mạch: ${repairScore}/5`;
+
+      const autoFixBtn = $('autoFixChallenge2Btn');
+      if (autoFixBtn) {
+        autoFixBtn.onclick = () => {
+          const bat = comps.find(c => c.type === 'battery');
+          const sw = comps.find(c => c.type === 'switch');
+          const blb = comps.find(c => c.type === 'bulb');
+          if (bat && sw && blb) {
+            wires.length = 0;
+            addWire(bat.id, 1, sw.id, 0);
+            addWire(sw.id, 1, blb.id, 1);
+            addWire(blb.id, 0, bat.id, 0);
+            sw.closed = true;
+            sfxWin();
+            solveCircuit(true);
+          }
+        };
+      }
+
+      const finishBtn = $('finishChallenge2Btn');
+      if (finishBtn) {
+        finishBtn.onclick = () => {
+          sfxWin();
+          if (window.closeStudio) window.closeStudio();
+          if (window.flyToZone) window.flyToZone('doctor');
+        };
+      }
+    }
   } else if (AppState.gmMode === 'build') {
     $('taskHeaderTitle').textContent = '🎯 Thử thách Đo & Lắp';
     btns.style.display = 'flex';
@@ -532,6 +734,9 @@ export function switchStudioMode(m) {
   AppState.unlockedHints = 0;
   if (m === 'challenge1') {
     AppState.challenge1Passed = false;
+  } else if (m === 'challenge2') {
+    AppState.challenge2Diagnosed = false;
+    AppState.challenge2Passed = false;
   }
 
   // Cập nhật huy hiệu chức năng chuyên biệt theo trạm Kiosk 3D
@@ -541,6 +746,8 @@ export function switchStudioMode(m) {
     badgeWrap.className = `station-badge mode-${m}`;
     if (m === 'challenge1') {
       badgeTxt.innerHTML = '🎯 <b>Thử Thách Màn 1:</b> Lắp Mạch Điện Đơn Giản';
+    } else if (m === 'challenge2') {
+      badgeTxt.innerHTML = '🩺 <b>Thử Thách Màn 2:</b> Bác Sĩ Bắt Bệnh & Sửa Mạch';
     } else if (m === 'build') {
       badgeTxt.innerHTML = '🎯 <b>Trạm Kiosk:</b> Thử Thách Đo & Lắp Mạch';
     } else if (m === 'sym') {
@@ -554,11 +761,11 @@ export function switchStudioMode(m) {
     }
   }
 
-  // Lọc khay linh kiện: Trong challenge1 chỉ hiển thị đúng 4 bộ phận
+  // Lọc khay linh kiện: Trong challenge1 và challenge2 chỉ hiển thị đúng 4 bộ phận
   const drawerBtns = document.querySelectorAll('.comp-drawer [data-add]');
   const meterCard = document.querySelector('.right-dock .side-card:first-child');
 
-  if (m === 'challenge1') {
+  if (m === 'challenge1' || m === 'challenge2') {
     drawerBtns.forEach(btn => {
       const type = btn.dataset.add;
       if (['wire_seg', 'battery', 'bulb', 'switch'].includes(type)) {
@@ -589,6 +796,10 @@ export function switchStudioMode(m) {
     setReadOnlyMode(false);
     CHALLENGE_1_DATA.setup(W, H);
     say('🎯 <b>Thử Thách Màn 1:</b> Dùng <b>Dây nối</b> liên kết <b>Pin 9V</b>, <b>Công tắc K</b> và <b>Bóng đèn</b> thành mạch kín. Sau đó đóng công tắc để đèn sáng!');
+  } else if (AppState.gmMode === 'challenge2') {
+    setReadOnlyMode(false);
+    CHALLENGE_2_DATA.setup(W, H);
+    say('🩺 <b>Thử Thách Màn 2:</b> Quan sát mạch điện trên bàn. Hãy <b>chọn đúng 2 nguyên nhân</b> khiến đèn chưa sáng trong thẻ bên phải để mở khóa sửa mạch nhé!');
   } else if (AppState.gmMode === 'build') {
     setReadOnlyMode(false);
     BUILD_TASKS[AppState.buildLv].setup(W, H);
@@ -660,6 +871,10 @@ export function initUIEventListeners() {
   if (clearBtn) {
     clearBtn.onclick = () => {
       if (S.readOnly) return;
+      if (AppState.gmMode === 'challenge2' && !AppState.challenge2Diagnosed) {
+        sayThrottled('🔒 <b>Mạch đang tạm khóa!</b> Em hãy hoàn thành bước <b>Bác sĩ bắt bệnh</b> ở bảng bên phải trước nhé!', 'warn', 1800);
+        return;
+      }
       comps.length = 0;
       wires.length = 0;
       S.selectedId = null;
@@ -678,6 +893,12 @@ export function initUIEventListeners() {
         CHALLENGE_1_DATA.setup(W, H);
         renderTaskCard(false);
         say('🔄 <b>Đã tải lại 4 bộ phận ban đầu.</b> Hãy dùng Dây nối lắp thành mạch kín rồi bấm đóng công tắc nhé!');
+      } else if (AppState.gmMode === 'challenge2') {
+        AppState.challenge2Diagnosed = false;
+        AppState.challenge2Passed = false;
+        CHALLENGE_2_DATA.setup(W, H);
+        renderTaskCard(false);
+        say('🔄 <b>Đã tải lại mạch lỗi ban đầu.</b> Hãy quan sát và chọn đúng 2 ô nguyên nhân đèn chưa sáng nhé!');
       } else if (AppState.gmMode === 'build') {
         BUILD_TASKS[AppState.buildLv].setup(W, H);
       } else if (AppState.gmMode === 'doc') {
@@ -694,6 +915,15 @@ export function initUIEventListeners() {
       if (AppState.gmMode === 'challenge1') {
         sfxClick(720);
         say('💡 <b>Gợi ý Thử Thách 1:</b><br>1. Kéo dây nối từ cực (+) Pin sang 1 đầu Công tắc.<br>2. Kéo dây nối từ đầu còn lại của Công tắc sang chốt dưới Đèn.<br>3. Kéo dây nối từ chốt bên hông Đèn về cực (-) Pin.<br>4. Nhấp vào Công tắc để <b>ĐÓNG MẠCH</b> làm bóng đèn sáng!');
+        return;
+      }
+      if (AppState.gmMode === 'challenge2') {
+        sfxClick(720);
+        if (!AppState.challenge2Diagnosed) {
+          say('💡 <b>Gợi ý Bắt bệnh:</b><br>1. Quan sát lưỡi gạt của <b>Khóa K</b> xem đang nằm ngang hay ngửa lên?<br>2. Nhìn sợi dây màu xanh từ bóng đèn: Nó đã chạm vào cực (-) của Pin hay đang hở ra?');
+        } else {
+          say('💡 <b>Gợi ý Sửa mạch:</b><br>1. Kéo dây nối từ chốt hở của Đèn vào cực (-) của Pin.<br>2. Bấm vào Khóa K để gạt đóng công tắc kín mạch!');
+        }
         return;
       }
       if (AppState.gmMode !== 'doc') return;
@@ -721,6 +951,25 @@ export function initUIEventListeners() {
           sfxWin();
           AppState.totalScore += 50;
           say(res.msg + '<br>👉 Hãy bấm nút <b>"📝 VÀO BÀI TRẮC NGHIỆM CÔNG DỤNG"</b> để thử thách 4 câu hỏi lý thuyết!', 'ok');
+          renderTaskCard(false);
+        } else {
+          sfxClick(220);
+          say(res.msg, 'warn');
+          renderTaskCard(false);
+        }
+        return;
+      }
+      if (AppState.gmMode === 'challenge2') {
+        if (!AppState.challenge2Diagnosed) {
+          sfxClick(220);
+          say('🩺 Em hãy tích chọn đúng 2 ô nguyên nhân ở bảng bên phải và bấm <b>"🩺 XÁC NHẬN CHẨN ĐOÁN"</b> trước nhé!', 'warn');
+          return;
+        }
+        const res = CHALLENGE_2_DATA.checkFixed();
+        if (res.ok) {
+          sfxWin();
+          AppState.totalScore += 50;
+          say(res.msg, 'ok');
           renderTaskCard(false);
         } else {
           sfxClick(220);
@@ -773,6 +1022,10 @@ export function initUIEventListeners() {
   document.querySelectorAll('[data-add]').forEach(btn => {
     btn.onclick = () => {
       if (S.readOnly) return;
+      if (AppState.gmMode === 'challenge2' && !AppState.challenge2Diagnosed) {
+        sayThrottled('🔒 <b>Mạch đang tạm khóa!</b> Em hãy hoàn thành bước <b>Bác sĩ bắt bệnh</b> ở bảng bên phải để mở khóa sửa mạch nhé!', 'warn', 1800);
+        return;
+      }
       const type = btn.dataset.add;
       sfxClick(600);
       const { W, H } = getCanvasDimensions();
