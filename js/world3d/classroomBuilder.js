@@ -255,48 +255,514 @@ function createBaseboards(parentGroup) {
 
 function buildBlackboard(parentGroup) {
   const c = document.createElement('canvas');
-  c.width = 1024;
-  c.height = 512;
+  c.width = 2048;
+  c.height = 1024;
   const ctx = c.getContext('2d');
 
-  // Nền bảng xanh lá đậm trường học
-  ctx.fillStyle = '#0f3a2a';
-  ctx.fillRect(0, 0, 1024, 512);
+  // 1. Nền bảng phấn xanh lá đậm trường học chuẩn THCS
+  const grad = ctx.createLinearGradient(0, 0, 0, 1024);
+  grad.addColorStop(0, '#0c2e1f');
+  grad.addColorStop(0.5, '#0f3826');
+  grad.addColorStop(1, '#0b2b1d');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 2048, 1024);
 
-  // Viền nhôm
+  // Họa tiết vân bảng chống lóa nhẹ
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.012)';
+  for (let i = 0; i < 2048; i += 64) {
+    ctx.fillRect(i, 0, 32, 1024);
+  }
+
+  // 2. Viền kim loại nhôm bọc bảng dày dặn sang trọng
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 24;
+  ctx.strokeRect(12, 12, 2024, 1000);
+
   ctx.strokeStyle = '#94a3b8';
-  ctx.lineWidth = 16;
-  ctx.strokeRect(8, 8, 1008, 496);
+  ctx.lineWidth = 8;
+  ctx.strokeRect(20, 20, 2008, 984);
 
-  // Nội dung bài học phấn trắng
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '800 36px "Be Vietnam Pro", sans-serif';
+  // Đường chỉ vàng trang trí bảng sư phạm
+  ctx.strokeStyle = 'rgba(253, 224, 71, 0.35)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(32, 32, 1984, 960);
+
+  // 3. TIÊU ĐỀ LỚN: THỬ THÁCH 3
   ctx.textAlign = 'center';
-  ctx.fillText('BÀI 22: MẠCH ĐIỆN ĐƠN GIẢN – ĐỊNH LUẬT OHM', 512, 70);
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 44px "Be Vietnam Pro", sans-serif';
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  ctx.shadowBlur = 8;
+  ctx.fillText('🎯 THỬ THÁCH 3: VẼ SƠ ĐỒ MẠCH ĐIỆN TỪ MẠCH MÔ PHỎNG', 1024, 82);
 
-  ctx.font = '600 24px "Be Vietnam Pro", sans-serif';
+  ctx.font = '600 22px "Be Vietnam Pro", sans-serif';
+  ctx.fillStyle = '#93c5fd';
+  ctx.shadowBlur = 0;
+  ctx.fillText('Quan sát mô hình mạch điện thực tế tại 4 Kiosk – Dùng ký hiệu quy ước vẽ lại chính xác sơ đồ mạch', 1024, 120);
+
+  // Đường phân cách vàng kim
+  ctx.strokeStyle = 'rgba(253, 224, 71, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(120, 140);
+  ctx.lineTo(1928, 140);
+  ctx.stroke();
+
+  // 4. KHUNG MÔ TẢ NHIỆM VỤ THỬ THÁCH 3 (TỔNG QUAN)
+  ctx.save();
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(50, 155, 1948, 105, 14);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#f87171';
+  ctx.font = '800 21px "Be Vietnam Pro", sans-serif';
+  ctx.fillText('📋 NỘI DUNG NHIỆM VỤ:', 80, 192);
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = '600 18.5px "Be Vietnam Pro", sans-serif';
+  ctx.fillText('Học sinh chọn 1 trong 4 khu Kiosk bên dưới để bắt đầu thử thách.', 360, 192);
+
+  ctx.font = '500 17.5px "Be Vietnam Pro", sans-serif';
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillText('• Quan sát thật kỹ cấu tạo, vị trí các linh kiện (Nguồn Pin, Khóa K, Bóng đèn, Ampe kế, Vôn kế) và đường đi của dòng điện trên mô hình thực tế.', 80, 222);
+
   ctx.fillStyle = '#fef08a';
-  ctx.fillText('1. Cường độ dòng điện: I = U / R (Đơn vị: Ampe - A)', 512, 130);
-  ctx.fillText('2. Hiệu điện thế: U = I × R (Đơn vị: Vôn - V)', 512, 175);
+  ctx.font = '600 17.5px "Be Vietnam Pro", sans-serif';
+  ctx.fillText('• Chuyển đổi mạch thực tế thành sơ đồ mạch điện tiêu chuẩn bằng các ký hiệu quy ước chuẩn SGK KHTN THCS.', 80, 248);
+  ctx.restore();
 
-  ctx.fillStyle = '#67e8f9';
-  ctx.fillText('• Nối tiếp: I = I₁ = I₂  |  U = U₁ + U₂', 512, 235);
-  ctx.fillText('• Song song: U = U₁ = U₂  |  I = I₁ + I₂', 512, 280);
+  // Helper vẽ bao gói văn bản tự động chống tràn chữ
+  const wrapText = (text, x, y, maxWidth, lineHeight) => {
+    const words = text.split(' ');
+    let line = '';
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxWidth && n > 0) {
+        ctx.fillText(line.trim(), x, y);
+        line = words[n] + ' ';
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line.trim(), x, y);
+    return y + lineHeight;
+  };
 
-  ctx.fillStyle = '#fca5a5';
-  ctx.font = '700 22px "Be Vietnam Pro", sans-serif';
-  ctx.fillText('⚠️ Chú ý: Ampe kế mắc NỐI TIẾP (R_A ≈ 0) · Vôn kế mắc SONG SONG', 512, 350);
+  // Helper vẽ ký hiệu linh kiện mini
+  const drawMiniBattery = (cx, cy, label) => {
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - 8, cy - 14); ctx.lineTo(cx - 8, cy + 14);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(cx + 8, cy - 8); ctx.lineTo(cx + 8, cy + 8);
+    ctx.stroke();
+
+    if (label) {
+      ctx.fillStyle = '#fde047';
+      ctx.font = '700 12px "Be Vietnam Pro", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, cx, cy - 20);
+    }
+  };
+
+  const drawMiniSwitch = (cx, cy, isClosed = true, label = 'K') => {
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath(); ctx.arc(cx - 15, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 15, cy, 3.5, 0, Math.PI * 2); ctx.fill();
+
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    if (isClosed) {
+      ctx.moveTo(cx - 15, cy); ctx.lineTo(cx + 15, cy);
+    } else {
+      ctx.moveTo(cx - 15, cy); ctx.lineTo(cx + 10, cy - 14);
+    }
+    ctx.stroke();
+
+    if (label) {
+      ctx.fillStyle = '#fde047';
+      ctx.font = '700 12px "Be Vietnam Pro", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, cx, cy - 18);
+    }
+  };
+
+  const drawMiniBulb = (cx, cy, label = 'Đ', isLit = true) => {
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = isLit ? '#fde047' : '#94a3b8';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.strokeStyle = isLit ? '#fde047' : '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 9, cy - 9); ctx.lineTo(cx + 9, cy + 9);
+    ctx.moveTo(cx - 9, cy + 9); ctx.lineTo(cx + 9, cy - 9);
+    ctx.stroke();
+
+    if (label) {
+      ctx.fillStyle = isLit ? '#fde047' : '#e2e8f0';
+      ctx.font = '700 12px "Be Vietnam Pro", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, cx, cy + 26);
+    }
+  };
+
+  const drawMiniMeter = (cx, cy, type = 'A', label = '') => {
+    const color = type === 'A' ? '#38bdf8' : '#f43f5e';
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = color;
+    ctx.font = '900 14px "Be Vietnam Pro", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(type, cx, cy + 5);
+
+    if (label) {
+      ctx.fillStyle = color;
+      ctx.font = '700 12px "Be Vietnam Pro", sans-serif';
+      ctx.fillText(label, cx, cy + 26);
+    }
+  };
+
+  const drawKioskMiniCircuit = (x, y, w, h, type) => {
+    const cx = x + w / 2;
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2.5;
+
+    if (type === 'series') {
+      const xL = x + 35, xR = x + w - 35;
+      const yT = y + 42, yB = y + h - 42;
+
+      ctx.beginPath();
+      ctx.moveTo(xL, yT); ctx.lineTo(cx - 55, yT);
+      ctx.moveTo(cx - 25, yT); ctx.lineTo(cx + 25, yT);
+      ctx.moveTo(cx + 55, yT); ctx.lineTo(xR, yT);
+      ctx.lineTo(xR, yB);
+      ctx.lineTo(cx + 70, yB);
+      ctx.moveTo(cx + 40, yB); ctx.lineTo(cx - 40, yB);
+      ctx.moveTo(cx - 70, yB); ctx.lineTo(xL, yB);
+      ctx.lineTo(xL, yT);
+      ctx.stroke();
+
+      drawMiniBattery(cx - 40, yT, 'Pin 12V');
+      drawMiniSwitch(cx + 40, yT, true, 'Khóa K');
+      drawMiniBulb(cx - 55, yB, 'Đ₁', true);
+      drawMiniBulb(cx + 55, yB, 'Đ₂', true);
+
+    } else if (type === 'parallel') {
+      const xL = x + 35, xR = x + w - 35;
+      const yT = y + 36, y1 = y + 95, y2 = y + 155;
+
+      ctx.beginPath();
+      ctx.moveTo(xL, yT); ctx.lineTo(cx - 55, yT);
+      ctx.moveTo(cx - 25, yT); ctx.lineTo(cx + 25, yT);
+      ctx.moveTo(cx + 55, yT); ctx.lineTo(xR, yT);
+      ctx.lineTo(xR, y1);
+      ctx.lineTo(cx + 20, y1);
+      ctx.moveTo(cx - 20, y1); ctx.lineTo(xL, y1);
+      ctx.moveTo(xR, y1); ctx.lineTo(xR, y2); ctx.lineTo(cx + 20, y2);
+      ctx.moveTo(cx - 20, y2); ctx.lineTo(xL, y2); ctx.lineTo(xL, yT);
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath(); ctx.arc(xL, y1, 4.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(xR, y1, 4.5, 0, Math.PI * 2); ctx.fill();
+
+      drawMiniBattery(cx - 40, yT, 'Pin 9V');
+      drawMiniSwitch(cx + 40, yT, true, 'Khóa K');
+      drawMiniBulb(cx, y1, 'Đ₁ (9V)', true);
+      drawMiniBulb(cx, y2, 'Đ₂ (9V)', true);
+
+    } else if (type === 'ammeter') {
+      const xL = x + 35, xR = x + w - 35;
+      const yT = y + 42, yB = y + h - 42;
+
+      ctx.beginPath();
+      ctx.moveTo(xL, yT); ctx.lineTo(cx - 55, yT);
+      ctx.moveTo(cx - 25, yT); ctx.lineTo(cx + 25, yT);
+      ctx.moveTo(cx + 55, yT); ctx.lineTo(xR, yT);
+      ctx.lineTo(xR, yB);
+      ctx.lineTo(cx + 70, yB);
+      ctx.moveTo(cx + 40, yB); ctx.lineTo(cx - 40, yB);
+      ctx.moveTo(cx - 70, yB); ctx.lineTo(xL, yB);
+      ctx.lineTo(xL, yT);
+      ctx.stroke();
+
+      drawMiniBattery(cx - 40, yT, 'Pin 9V');
+      drawMiniSwitch(cx + 40, yT, true, 'Khóa K');
+      drawMiniMeter(cx - 55, yB, 'A', 'Ampe kế');
+      drawMiniBulb(cx + 55, yB, 'Đèn Đ', true);
+
+    } else if (type === 'voltmeter') {
+      const xL = x + 35, xR = x + w - 35;
+      const yT = y + 36, yM = y + 102, yB = y + 162;
+
+      ctx.beginPath();
+      ctx.moveTo(xL, yT); ctx.lineTo(cx - 55, yT);
+      ctx.moveTo(cx - 25, yT); ctx.lineTo(cx + 25, yT);
+      ctx.moveTo(cx + 55, yT); ctx.lineTo(xR, yT);
+      ctx.lineTo(xR, yM);
+      ctx.lineTo(cx + 20, yM);
+      ctx.moveTo(cx - 20, yM); ctx.lineTo(xL, yM);
+      ctx.lineTo(xL, yT);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cx - 35, yM); ctx.lineTo(cx - 35, yB); ctx.lineTo(cx - 18, yB);
+      ctx.moveTo(cx + 35, yM); ctx.lineTo(cx + 35, yB); ctx.lineTo(cx + 18, yB);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#f43f5e';
+      ctx.beginPath(); ctx.arc(cx - 35, yM, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + 35, yM, 3.5, 0, Math.PI * 2); ctx.fill();
+
+      drawMiniBattery(cx - 40, yT, 'Pin 9V');
+      drawMiniSwitch(cx + 40, yT, true, 'Khóa K');
+      drawMiniBulb(cx, yM, 'Đèn Đ', true);
+      drawMiniMeter(cx, yB, 'V', 'Vôn kế');
+    }
+  };
+
+  // 5. BỐN KHU KIOSK (4 CỘT HIỂN THỊ CHUẨN XÁC, KHÔNG TRÀN CHỮ)
+  const startX = 50;
+  const cardW = 472;
+  const cardH = 590;
+  const startY = 275;
+  const gap = 20;
+
+  const kiosks = [
+    {
+      num: 'KIOSK 1',
+      title: '2 ĐÈN MẮC NỐI TIẾP',
+      theme: '#f59e0b',
+      themeLight: '#fde047',
+      type: 'series',
+      features: [
+        'Mạch kín duy nhất: Các linh kiện nối đuôi nhau.',
+        'Cường độ dòng điện: I = I₁ = I₂ (bằng nhau).',
+        'Hiệu điện thế: U = U₁ + U₂ (chia đều cho 2 đèn).'
+      ],
+      task: 'Quan sát 2 đèn mắc liên tiếp trong mạch và vẽ sơ đồ 2 ký hiệu đèn nối tiếp trong 1 vòng dây.'
+    },
+    {
+      num: 'KIOSK 2',
+      title: '2 ĐÈN MẮC SONG SONG',
+      theme: '#0ea5e9',
+      themeLight: '#38bdf8',
+      type: 'parallel',
+      features: [
+        'Có 2 điểm nút chung rẽ thành 2 nhánh độc lập.',
+        'Hiệu điện thế: U = U₁ = U₂ (nhận đủ áp nguồn).',
+        'Dòng điện chính: I = I₁ + I₂ (rẽ ở điểm nút).'
+      ],
+      task: 'Quan sát 2 nhánh rẽ riêng biệt và vẽ sơ đồ có 2 điểm nút rẽ nhánh chứa 2 bóng đèn.'
+    },
+    {
+      num: 'KIOSK 3',
+      title: 'MẠCH CÓ AMPE KẾ',
+      theme: '#a855f7',
+      themeLight: '#c084fc',
+      type: 'ammeter',
+      features: [
+        'Dụng cụ đo CƯỜNG ĐỘ DÒNG ĐIỆN (kí hiệu: A).',
+        'Quy tắc mắc: Bắt buộc mắc NỐI TIẾP với tải.',
+        'Chốt (+) nối về cực dương, chốt (−) về cực âm.'
+      ],
+      task: 'Quan sát Ampe kế nối thẳng hàng trong mạch và vẽ ký hiệu vòng tròn có chữ A nối tiếp.'
+    },
+    {
+      num: 'KIOSK 4',
+      title: 'MẠCH CÓ VÔN KẾ',
+      theme: '#f43f5e',
+      themeLight: '#fb7185',
+      type: 'voltmeter',
+      features: [
+        'Dụng cụ đo HIỆU ĐIỆN THẾ (kí hiệu: V).',
+        'Quy tắc mắc: Bắt buộc mắc SONG SONG với tải.',
+        'Hai đầu que đo kẹp trực tiếp vào 2 chốt của đèn.'
+      ],
+      task: 'Quan sát 2 que đo của Vôn kế kẹp 2 đầu đèn và vẽ ký hiệu vòng tròn có chữ V mắc song song.'
+    }
+  ];
+
+  kiosks.forEach((k, idx) => {
+    const cX = startX + idx * (cardW + gap);
+    const cY = startY;
+
+    ctx.save();
+    // Nền Card Kiosk
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.strokeStyle = k.theme;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(cX, cY, cardW, cardH, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    // Dải màu đầu Card
+    ctx.fillStyle = k.theme;
+    ctx.beginPath();
+    ctx.roundRect(cX, cY, cardW, 46, [16, 16, 0, 0]);
+    ctx.fill();
+
+    // Huy hiệu KIOSK
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.roundRect(cX + 12, cY + 8, 92, 30, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 16px "Be Vietnam Pro", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(k.num, cX + 58, cY + 29);
+
+    // Tiêu đề Kiosk
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 17.5px "Be Vietnam Pro", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(k.title, cX + 116, cY + 30);
+
+    // Khung sơ đồ mẫu thu nhỏ
+    const diaX = cX + 16;
+    const diaY = cY + 58;
+    const diaW = cardW - 32;
+    const diaH = 195;
+
+    ctx.fillStyle = '#07101e';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(diaX, diaY, diaW, diaH, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    drawKioskMiniCircuit(diaX, diaY, diaW, diaH, k.type);
+
+    // Phần 1: Đặc điểm mạch điện
+    const textStartY = diaY + diaH + 20;
+    ctx.fillStyle = k.themeLight;
+    ctx.font = '800 15px "Be Vietnam Pro", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('⚡ ĐẶC ĐIỂM MẠCH ĐIỆN:', cX + 16, textStartY);
+
+    ctx.font = '500 13.5px "Be Vietnam Pro", sans-serif';
+    ctx.fillStyle = '#cbd5e1';
+    let lineY = textStartY + 22;
+    k.features.forEach(f => {
+      ctx.fillText('• ' + f, cX + 18, lineY);
+      lineY += 21;
+    });
+
+    // Đường vạch phân cách
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cX + 16, lineY + 6);
+    ctx.lineTo(cX + cardW - 16, lineY + 6);
+    ctx.stroke();
+
+    // Phần 2: Yêu cầu vẽ sơ đồ
+    const taskStartY = lineY + 28;
+    ctx.fillStyle = '#4ade80';
+    ctx.font = '800 15px "Be Vietnam Pro", sans-serif';
+    ctx.fillText('✍️ YÊU CẦU VẼ SƠ ĐỒ:', cX + 16, taskStartY);
+
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.7)';
+    ctx.beginPath();
+    ctx.roundRect(cX + 16, taskStartY + 10, cardW - 32, 85, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = '500 13.5px "Be Vietnam Pro", sans-serif';
+    wrapText(k.task, cX + 26, taskStartY + 34, cardW - 52, 20);
+
+    ctx.restore();
+  });
+
+  // 6. KHUNG CHÂN BẢNG: HƯỚNG DẪN THỰC HÀNH TỔNG QUÁT
+  ctx.save();
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.18)';
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(50, 882, 1948, 55, 12);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#4ade80';
+  ctx.font = '800 20px "Be Vietnam Pro", sans-serif';
+  ctx.fillText('👉 Học sinh chọn 1 trong 4 Kiosk để quan sát mô hình 3D thực tế và vẽ lại sơ đồ mạch điện theo đúng ký hiệu quy ước!', 1024, 917);
+  ctx.restore();
 
   const tex = new THREE.CanvasTexture(c);
+  tex.anisotropy = 8;
   const boardMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(6.8, 3.4),
-    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 })
+    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.55 })
   );
   boardMesh.position.set(0, 2.7, -ROOM_D / 2 + 0.05);
   boardMesh.castShadow = true;
   parentGroup.add(boardMesh);
 
-  // Bàn giáo viên đặt trang trọng tại bục giảng ở góc trước bên trái (không che khuất Mẫu 2)
+  // Khay để phấn và mút lau bảng ở đáy bảng
+  const trayMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.3 });
+  const chalkTray = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.05, 0.15), trayMat);
+  chalkTray.position.set(0, 1.0, -ROOM_D / 2 + 0.12);
+  chalkTray.castShadow = true;
+  parentGroup.add(chalkTray);
+
+  const eraserMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+  const eraser = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.06, 0.10), eraserMat);
+  eraser.position.set(0.6, 1.05, -ROOM_D / 2 + 0.12);
+  parentGroup.add(eraser);
+
+  const chalkMatWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.95 });
+  const chalkMatYellow = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.95 });
+  const chalkMatCyan = new THREE.MeshStandardMaterial({ color: 0x67e8f9, roughness: 0.95 });
+
+  const chalk1 = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.12, 8), chalkMatWhite);
+  chalk1.rotation.z = Math.PI / 2;
+  chalk1.position.set(-0.3, 1.04, -ROOM_D / 2 + 0.12);
+  parentGroup.add(chalk1);
+
+  const chalk2 = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.10, 8), chalkMatYellow);
+  chalk2.rotation.z = Math.PI / 2;
+  chalk2.position.set(-0.15, 1.04, -ROOM_D / 2 + 0.12);
+  parentGroup.add(chalk2);
+
+  const chalk3 = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.11, 8), chalkMatCyan);
+  chalk3.rotation.z = Math.PI / 2;
+  chalk3.position.set(0.0, 1.04, -ROOM_D / 2 + 0.12);
+  parentGroup.add(chalk3);
+
+  // Bàn giáo viên đặt trang trọng tại bục giảng ở góc trước bên trái (không che khuất Kiosk 1)
   const deskWood = new THREE.Mesh(
     new THREE.BoxGeometry(2.0, 0.9, 1.1),
     new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.65 })
@@ -1508,16 +1974,16 @@ function buildSampleStations(parentGroup) {
   });
   parentGroup.add(st1);
 
-  // MẪU 2: HAI ĐÈN MẮC NỐI TIẾP
+  // KIOSK 1: HAI ĐÈN MẮC NỐI TIẾP (THỬ THÁCH 3)
   const st2 = createExperimentStation({
     x: -4.2, z: -7.8, rotY: 0,
-    title: 'MẪU 2: HAI ĐÈN MẮC NỐI TIẾP',
-    subtitle: 'Cường độ dòng điện I bằng nhau · U chia đều',
+    title: 'KIOSK 1: HAI ĐÈN MẮC NỐI TIẾP',
+    subtitle: 'Thử Thách 3 · Quan sát mô hình thực tế & Vẽ sơ đồ',
     schemeType: 'sample2',
     studentShirt: 0xffffff,
     studentGender: 'female',
     actionData: {
-      label: '👁️ Xem Mạch Mẫu 2 (2 Đèn Nối Tiếp – Chỉ quan sát & Đo thử)',
+      label: '🎯 Kiosk 1: Mạch 2 Đèn Nối Tiếp (Thử Thách 3: Quan sát & Vẽ sơ đồ)',
       mode: 'free',
       preset: 1,
       readOnly: true
@@ -1525,16 +1991,16 @@ function buildSampleStations(parentGroup) {
   });
   parentGroup.add(st2);
 
-  // MẪU 3: HAI ĐÈN MẮC SONG SONG
+  // KIOSK 2: HAI ĐÈN MẮC SONG SONG (THỬ THÁCH 3)
   const st3 = createExperimentStation({
     x: 3.8, z: -7.8, rotY: 0,
-    title: 'MẪU 3: HAI ĐÈN MẮC SONG SONG',
-    subtitle: 'Cùng hiệu điện thế U · Đèn sáng mạnh độc lập',
+    title: 'KIOSK 2: HAI ĐÈN MẮC SONG SONG',
+    subtitle: 'Thử Thách 3 · Quan sát mô hình thực tế & Vẽ sơ đồ',
     schemeType: 'sample3',
     studentShirt: 0xffffff,
     studentGender: 'male',
     actionData: {
-      label: '👁️ Xem Mạch Mẫu 3 (2 Đèn Song Song – Chỉ quan sát & Đo thử)',
+      label: '🎯 Kiosk 2: Mạch 2 Đèn Song Song (Thử Thách 3: Quan sát & Vẽ sơ đồ)',
       mode: 'free',
       preset: 2,
       readOnly: true
@@ -1542,9 +2008,9 @@ function buildSampleStations(parentGroup) {
   });
   parentGroup.add(st3);
 
-  // Biển hiệu Khu I trên tường chính diện
-  const bannerZone1 = makeWallTextSign('I. KHU XEM MẠCH ĐIỆN MẪU', 'Chế độ Chỉ Xem – Thử nghiệm bật/tắt Khóa K & Kéo que đo Vôn kế', 6.6, 1.3);
-  bannerZone1.position.set(-0.2, 4.45, -9.9);
+  // Biển hiệu Thử Thách 3 trên tường chính diện (đặt cao y = 5.0m, không đè lấn lên bảng to)
+  const bannerZone1 = makeWallTextSign('🎯 THỬ THÁCH 3: VẼ SƠ ĐỒ MẠCH ĐIỆN TỪ MẠCH MÔ PHỎNG', '4 Khu Kiosk: 2 Đèn Nối Tiếp · 2 Đèn Song Song · Mạch Ampe Kế · Mạch Vôn Kế', 8.4, 1.15);
+  bannerZone1.position.set(0, 5.0, -9.9);
   parentGroup.add(bannerZone1);
 }
 

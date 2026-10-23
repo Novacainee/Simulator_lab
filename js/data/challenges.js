@@ -7,10 +7,10 @@ import { S, comps, wires, makeComp, addWire, clearCompsAndWires } from '../state
 import { solveCircuit, fmt } from '../physics/mnaSolver.js';
 
 export const ZONE_TARGETS = {
-  samples:     { x: -6.0, z: -1.5, yaw: 1.57,  pitch: 0.06,  name: 'Khu Xem Mạch Mẫu' },
+  samples:     { x: 0,    z: -4.5, yaw: 0.00,  pitch: 0.08,  name: 'Thử Thách 3: Vẽ Sơ Đồ Mạch Điện' },
   sample1:     { x: -6.0, z: -1.5, yaw: 1.57,  pitch: 0.06,  name: 'Thử Thách 1: Lắp Mạch Đơn' },
-  sample2:     { x: -4.2, z: -4.6, yaw: 0.00,  pitch: 0.08,  name: 'Mẫu 2: Hai Đèn Nối Tiếp' },
-  sample3:     { x: 3.8,  z: -4.6, yaw: 0.00,  pitch: 0.08,  name: 'Mẫu 3: Hai Đèn Song Song' },
+  sample2:     { x: -4.2, z: -4.6, yaw: 0.00,  pitch: 0.08,  name: 'Thử Thách 3: Kiosk 1 (Nối Tiếp)' },
+  sample3:     { x: 3.8,  z: -4.6, yaw: 0.00,  pitch: 0.08,  name: 'Thử Thách 3: Kiosk 2 (Song Song)' },
   doctor:      { x: 6.0,  z: -3.2, yaw: -1.57, pitch: 0.06,  name: 'Thử Thách 2: Bác Sĩ Mạch' },
   free:        { x: 0,    z: 5.5,  yaw: 0,     pitch: -0.08, name: 'Khu Lắp Mạch Tự Do' },
   quiz:        { x: 7.2,  z: 3.8,  yaw: -1.45, pitch: -0.01, name: 'Khu Ôn Tập & Ký Hiệu' },
