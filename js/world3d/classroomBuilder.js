@@ -811,134 +811,136 @@ function makeWallBoardTexture(title, subtitle, schemeType) {
 
   } else if (schemeType === 'doctor') {
     // THỬ THÁCH MÀN 2: BÁC SĨ CHẨN ĐOÁN LỖI MẠCH (GIỐNG HÌNH 2)
-    // 1. Khung hộp mô tả nhiệm vụ bên trái (x: 50 .. 490, y: 130 .. 510)
+    // 1. Bên trái (x: 50 .. 495): SƠ ĐỒ MẠCH ĐANG BỊ LỖI (CHỈ HIỆN SƠ ĐỒ, KHÔNG CHỈ RÕ LỖI)
     g2.save();
-    g2.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    g2.strokeStyle = '#ef4444';
+    g2.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    g2.strokeStyle = '#0284c7';
     g2.lineWidth = 2.5;
     g2.beginPath();
-    g2.roundRect(50, 130, 440, 380, 14);
-    g2.fill();
-    g2.stroke();
-
-    // Tiêu đề khung nhiệm vụ
-    g2.fillStyle = '#f87171';
-    g2.font = '800 22px "Be Vietnam Pro", sans-serif';
-    g2.textAlign = 'left';
-    g2.fillText('📋 THỬ THÁCH 2: BẮT BỆNH & SỬA MẠCH', 70, 170);
-
-    g2.font = '600 16px "Be Vietnam Pro", sans-serif';
-    g2.fillStyle = '#f8fafc';
-    g2.fillText('🔍 Hiện tượng: Mạch điện có đủ Pin, Khóa K, Đèn', 70, 208);
-    g2.fillText('   nhưng bóng đèn hoàn toàn KHÔNG sáng!', 70, 234);
-
-    // Đường phân cách
-    g2.strokeStyle = 'rgba(239, 68, 68, 0.35)';
-    g2.lineWidth = 1.5;
-    g2.beginPath();
-    g2.moveTo(70, 252); g2.lineTo(470, 252);
-    g2.stroke();
-
-    // Hai bước nhiệm vụ
-    g2.fillStyle = '#fde047';
-    g2.font = '800 17px "Be Vietnam Pro", sans-serif';
-    g2.fillText('🩺 BƯỚC 1: BÁC SĨ BẮT BỆNH', 70, 282);
-    g2.fillStyle = '#e2e8f0';
-    g2.font = '500 15px "Be Vietnam Pro", sans-serif';
-    g2.fillText('• Quan sát và chọn đúng 2 nguyên nhân khiến đèn tắt.', 70, 308);
-
-    g2.fillStyle = '#38bdf8';
-    g2.font = '800 17px "Be Vietnam Pro", sans-serif';
-    g2.fillText('🛠️ BƯỚC 2: KHẮC PHỤC & SỬA MẠCH', 70, 344);
-    g2.fillStyle = '#e2e8f0';
-    g2.font = '500 15px "Be Vietnam Pro", sans-serif';
-    g2.fillText('• Nối kín đầu dây vào cực Pin và Đóng Khóa K cho đèn sáng!', 70, 370);
-
-    // Đường phân cách 2
-    g2.strokeStyle = 'rgba(239, 68, 68, 0.35)';
-    g2.beginPath();
-    g2.moveTo(70, 396); g2.lineTo(470, 396);
-    g2.stroke();
-
-    // Hướng dẫn
-    g2.fillStyle = '#4ade80';
-    g2.font = '700 16px "Be Vietnam Pro", sans-serif';
-    g2.fillText('👉 Nhấp vào bàn để vào phòng lab bắt bệnh!', 70, 436);
-    g2.fillStyle = '#fca5a5';
-    g2.font = '600 14px "Be Vietnam Pro", sans-serif';
-    g2.fillText('⚠️ Phải chẩn đoán đúng 2 lỗi mới được sửa mạch!', 70, 468);
-    g2.restore();
-
-    // 2. Bên phải (x: 520 .. 970): Sơ đồ mạch điện đang bị lỗi (Giống Hình 2)
-    g2.save();
-    g2.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    g2.strokeStyle = '#ef4444';
-    g2.lineWidth = 2.5;
-    g2.beginPath();
-    g2.roundRect(520, 130, 450, 380, 14);
+    g2.roundRect(50, 130, 445, 385, 14);
     g2.fill();
     g2.stroke();
 
     g2.textAlign = 'center';
     g2.fillStyle = '#fde047';
-    g2.font = '800 20px "Be Vietnam Pro", sans-serif';
-    g2.fillText('SƠ ĐỒ MẠCH ĐANG BỊ LỖI (GIỐNG HÌNH 2)', 745, 170);
+    g2.font = '800 19px "Be Vietnam Pro", sans-serif';
+    g2.fillText('SƠ ĐỒ MẠCH ĐIỆN (HÌNH 2)', 272, 168);
 
     // Ký hiệu Pin 9V ở trên bên trái
-    drawBatterySym(630, 240, 'Pin 9V');
+    drawBatterySym(175, 245, 'Pin 9V');
 
-    // Ký hiệu Khóa K đang mở ở trên bên phải
-    drawSwitchSym(850, 240, false, 'Khóa K (Mở)');
+    // Ký hiệu Khóa K đang mở ở trên bên phải (chỉ ghi Khóa K, không ghi spoil lỗi)
+    drawSwitchSym(370, 245, false, 'Khóa K');
 
     // Ký hiệu Bóng đèn tròn ở dưới
-    drawBulbSym(745, 410, 'Đèn (Tắt)', false);
+    drawBulbSym(272, 410, 'Bóng đèn', false);
 
     // Dây 1 (Đỏ): Nối từ cực (+) Pin sang Khóa K
     g2.strokeStyle = '#ef4444';
     g2.lineWidth = 3.5;
     g2.beginPath();
-    g2.moveTo(620, 240);
-    g2.lineTo(580, 240);
-    g2.lineTo(580, 195);
-    g2.lineTo(824, 195);
-    g2.lineTo(824, 240);
+    g2.moveTo(165, 245);
+    g2.lineTo(120, 245);
+    g2.lineTo(120, 195);
+    g2.lineTo(344, 195);
+    g2.lineTo(344, 245);
     g2.stroke();
 
     // Dây 2 (Đỏ): Nối từ Khóa K sang chốt phải của Đèn
     g2.beginPath();
-    g2.moveTo(876, 240);
-    g2.lineTo(925, 240);
-    g2.lineTo(925, 410);
-    g2.lineTo(771, 410);
+    g2.moveTo(396, 245);
+    g2.lineTo(435, 245);
+    g2.lineTo(435, 410);
+    g2.lineTo(298, 410);
     g2.stroke();
 
-    // Dây 3 (Xanh dương): Nối từ chốt trái của Đèn đi lên nhưng HỞ / ĐỨT ĐOẠN trước cực Pin (-)
+    // Dây 3 (Xanh dương): Nối từ chốt trái của Đèn đi lên nhưng HỞ trước cực Pin (-)
     g2.strokeStyle = '#38bdf8';
     g2.beginPath();
-    g2.moveTo(719, 410);
-    g2.lineTo(660, 410);
-    g2.lineTo(660, 320);
+    g2.moveTo(246, 410);
+    g2.lineTo(195, 410);
+    g2.lineTo(195, 315);
     g2.stroke();
 
-    // Điểm hở mạch: Vẽ vòng tròn đỏ có dấu nhân
-    g2.fillStyle = '#ef4444';
-    g2.beginPath(); g2.arc(660, 320, 8, 0, Math.PI * 2); g2.fill();
-    g2.strokeStyle = '#ffffff'; g2.lineWidth = 2;
+    // Đầu chấu kim loại của dây hở (giống hình 2)
+    g2.fillStyle = '#94a3b8';
     g2.beginPath();
-    g2.moveTo(655, 315); g2.lineTo(665, 325);
-    g2.moveTo(665, 315); g2.lineTo(655, 325);
+    g2.arc(195, 315, 4.5, 0, Math.PI * 2);
+    g2.fill();
+
+    // Dòng nhắc nhở trung tính bên dưới sơ đồ
+    g2.fillStyle = '#94a3b8';
+    g2.font = '600 13.5px "Be Vietnam Pro", sans-serif';
+    g2.fillText('🔍 Hãy quan sát kỹ sơ đồ để tìm các điểm ngắt dòng điện', 272, 488);
+    g2.restore();
+
+    // 2. Bên phải (x: 525 .. 970): KHUNG NHIỆM VỤ THỬ THÁCH 2 (KHÔNG BỊ TRÀN CHỮ)
+    g2.save();
+    g2.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    g2.strokeStyle = '#ef4444';
+    g2.lineWidth = 2.5;
+    g2.beginPath();
+    g2.roundRect(525, 130, 445, 385, 14);
+    g2.fill();
     g2.stroke();
 
-    // Cảnh báo 1: Dây hở
+    // Tiêu đề khung nhiệm vụ
     g2.fillStyle = '#f87171';
-    g2.font = '700 14px "Be Vietnam Pro", sans-serif';
+    g2.font = '800 20px "Be Vietnam Pro", sans-serif';
     g2.textAlign = 'left';
-    g2.fillText('❌ Lỗi 1: 1 đầu dây chưa nối vào pin', 600, 350);
+    g2.fillText('📋 NHIỆM VỤ THỬ THÁCH 2:', 548, 168);
 
-    // Cảnh báo 2: Khóa K mở
+    g2.font = '600 14.5px "Be Vietnam Pro", sans-serif';
+    g2.fillStyle = '#f8fafc';
+    g2.fillText('🔍 Hiện tượng: Mạch đã có đủ linh kiện,', 548, 198);
+    g2.fillText('   nhưng bóng đèn hoàn toàn KHÔNG sáng!', 548, 220);
+
+    // Đường phân cách 1
+    g2.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+    g2.lineWidth = 1.5;
+    g2.beginPath();
+    g2.moveTo(548, 236);
+    g2.lineTo(945, 236);
+    g2.stroke();
+
+    // Hai bước nhiệm vụ
     g2.fillStyle = '#fde047';
-    g2.fillText('❌ Lỗi 2: Khóa K chưa đóng', 760, 280);
+    g2.font = '800 16px "Be Vietnam Pro", sans-serif';
+    g2.fillText('🩺 BƯỚC 1: BÁC SĨ BẮT BỆNH', 548, 264);
+    g2.fillStyle = '#e2e8f0';
+    g2.font = '500 14px "Be Vietnam Pro", sans-serif';
+    g2.fillText('• Quan sát sơ đồ bên trái để tìm nguyên nhân.', 548, 288);
+    g2.fillText('• Chọn đúng 2 ô nguyên nhân để mở khóa sửa mạch.', 548, 310);
 
+    // Đường phân cách 2
+    g2.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+    g2.beginPath();
+    g2.moveTo(548, 326);
+    g2.lineTo(945, 326);
+    g2.stroke();
+
+    g2.fillStyle = '#38bdf8';
+    g2.font = '800 16px "Be Vietnam Pro", sans-serif';
+    g2.fillText('🛠️ BƯỚC 2: KHẮC PHỤC & SỬA MẠCH', 548, 354);
+    g2.fillStyle = '#e2e8f0';
+    g2.font = '500 14px "Be Vietnam Pro", sans-serif';
+    g2.fillText('• Nối kín đầu dây vào cực Pin và Đóng Khóa K.', 548, 378);
+    g2.fillText('• Thắp sáng đèn để hoàn thành thử thách!', 548, 400);
+
+    // Đường phân cách 3
+    g2.strokeStyle = 'rgba(239, 68, 68, 0.35)';
+    g2.beginPath();
+    g2.moveTo(548, 416);
+    g2.lineTo(945, 416);
+    g2.stroke();
+
+    // Hướng dẫn
+    g2.fillStyle = '#4ade80';
+    g2.font = '700 15px "Be Vietnam Pro", sans-serif';
+    g2.fillText('👉 Nhấp vào bàn để vào phòng lab thực hành!', 548, 448);
+    g2.fillStyle = '#fca5a5';
+    g2.font = '600 13px "Be Vietnam Pro", sans-serif';
+    g2.fillText('⚠️ Chú ý kỹ đường dây nối và trạng thái Khóa K!', 548, 474);
     g2.restore();
   }
 
